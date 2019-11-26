@@ -1,0 +1,13 @@
+# PyCharm settings folders
+.idea/
+
+# temporary files created on run-time & by unit tests
+*~
+*__pycache__*
+.coverage*
+.pytest_cache/
+/coverage/
+/tmp/
+
+# virtual environment
+/venv
