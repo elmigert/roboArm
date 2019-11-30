@@ -12,11 +12,11 @@ address=$1
 # copy sh key to avoid typing password
 ssh-copy-id mp@$address
 
-# delete folder
-ssh mp@$address rm -rf $dir
-# create folder
-ssh mp@$address mkdir -p $dir
-# sync files
+## delete folder
+#ssh mp@$address rm -rf $dir
+## create folder
+#ssh mp@$address mkdir -p $dir
+## sync files
 echo ""
 echo "--- uploading ---"
 DIRS_TO_SYNC="uArm-Python-SDK"
