@@ -11,3 +11,7 @@
 
 # virtual environment
 /venv
+
+# locsl bash scripts
+/bash_scripts/connect.sh
+/bash_scripts/p2p.sh
