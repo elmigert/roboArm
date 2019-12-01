@@ -4,10 +4,8 @@
 This file contains the RobotHandler class, which handles the communication with the uArm Swift pro.
 """
 
-import os
-import sys
 import time
-from uArm-Python-SDK.uarm.wrapper import SwiftAPI
+from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
 
 class RobotHandler:
