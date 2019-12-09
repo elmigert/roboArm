@@ -19,7 +19,8 @@ ssh-copy-id mp@$address
 ## sync files
 echo ""
 echo "--- uploading ---"
-DIRS_TO_SYNC="uArm-Python-SDK"
-rsync -av -R $DIRS_TO_SYNC mp@$address:$dir
+DIRS_TO_SYNC="uarm_python_sdk src"
+rsync -av -R $DIRS_TO_SYNC mp@$address:$dir \
+  --delete
 echo "done"
 echo ""
