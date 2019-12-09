@@ -6,9 +6,11 @@ This file contains the RobotHandler class, which handles the communication with 
 
 import time
 
+from uarm_python_sdk.uarm.wrapper import SwiftAPI
+
+from src.direction_kind import DirectionKind
 from src.geometry_helper import GeometryHelper
 from src.robot_error import ErrorCode, RobotError
-from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
 
 class RobotHandler:
@@ -62,7 +64,7 @@ class RobotHandler:
         :type y_user: int
         """
         # transform frames of positions
-        uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user)
+        uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user, self.__z_uarm)
         x_uarm_new = uarm_dict['x']
         y_uarm_new = uarm_dict['y']
 
@@ -81,10 +83,56 @@ class RobotHandler:
         self.__y_uarm = y_uarm_new
         self.__wrist_angle = wrist_angle_new
 
-    def hight_new(self, z_user):
+    def height_new(self, z_user):
         """
         Move robot arm to z position in user frame.
         :param z_user: new height in user frame
         :type z_user: int
         """
+        # calculate new height in uarm frame
+        z_uarm_new = self.__geometry_helper.transform_height_user_to_uarm(z_user, self.__x_uarm, self.__y_uarm)
 
+        # move arm
+        self.__swift.set_position(z=z_uarm_new)
+        self.__swift.flush_cmd()
+
+        # set values
+        self.__z_uarm = z_uarm_new
+
+    def rotate_gripper(self, direction):
+        """
+        Rotate gripper either 90° left or right, depending on direction.
+        :param direction: either left or right
+        :type direction: DirectionKind
+        """
+        if direction is DirectionKind.Left:
+            wrist_angle_new = self.__wrist_angle + 90.0
+        elif direction is DirectionKind.Right:
+            wrist_angle_new = self.__wrist_angle - 90.0
+        else:
+            raise NotImplementedError()
+
+        if not (0 < wrist_angle_new < 180):
+            message = "Der Greiffer kann nicht weiter in die gewünschte Richtung gedreht werden."
+            raise RobotError(ErrorCode.E0005, message)
+
+        # move robot
+        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle_new)
+        self.__swift.flush_cmd()
+
+        # set value
+        self.__wrist_angle = wrist_angle_new
+
+    def pump_on(self):
+        """
+        Turn on the pump.
+        """
+        self.__swift.set_pump(on=True)
+        self.__swift.flush_cmd()
+
+    def pump_off(self):
+        """
+        Turn off the pump.
+        """
+        self.__swift.set_pump(on=False)
+        self.__swift.flush_cmd()

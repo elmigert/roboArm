@@ -13,7 +13,7 @@ class GeometryHelper:
     """
     This class offers some transformations and helper functions between the uArm frame and an simplified user frame.
     """
-    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=10, min_radius=120, max_radius=346):
+    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=10, xy_base_offset=174, z_base_offset=93.5, min_radius_xy=120, max_radius_xy=340):
         """
         Constructor, defines basic values of user frame.
         :param edge_length: side length of unit cube in mm
@@ -24,26 +24,34 @@ class GeometryHelper:
         :type y_offset: float
         :param z_offset: offset of user frame in z direction in mm
         :type z_offset: float
-        :param min_radius: minimum workspace radius
-        :type min_radius:float
-        :param max_radius: maximum workspace radius
-        :type max_radius: float
+        :param xy_base_offset: offset of workspace in xy-plane
+        :type xy_base_offset: float
+        :param z_base_offset: offset of uarm base in z-direction in mm
+        :type z_base_offset: float
+        :param min_radius_xy: minimum workspace radius
+        :type min_radius_xy:float
+        :param max_radius_xy: maximum workspace radius
+        :type max_radius_xy: float
         """
         self.__edge_length = edge_length
         self.__x_offset = x_offset
         self.__y_offset = y_offset
         self.__z_offset = z_offset
-        self.__min_radius = min_radius
-        self.__max_radius = max_radius
+        self.__xy_base_offset = xy_base_offset
+        self.__z_base_offset = z_base_offset
+        self.__min_radius_xy = min_radius_xy
+        self.__max_radius_xy = max_radius_xy
 
-    def transform_position_user_to_uarm(self, x_user, y_user):
+    def transform_position_user_to_uarm(self, x_user, y_user, z_uarm):
         """
-        Transform x, y position in user frame to x, y position in uarm frame. For user frame specification refer 
+        Transform x, y -position in user frame to x, y position in uarm frame. For user frame specification refer
         to the board design.
-        :param x_user: x position in user frame
+        :param x_user: x-position in user frame
         :type x_user: int
-        :param y_user: y position in user frame
+        :param y_user: y-position in user frame
         :type y_user: int
+        :param z_uarm: z-position in uarm frame
+        :type z_uarm: float
         :return: position in uarm frame {'x': x, 'y', y}
         :rtype: dict
         """
@@ -53,12 +61,14 @@ class GeometryHelper:
         y_uarm = (y_user + .5) * self.__edge_length + self.__y_offset
 
         # check if input is in range of robot
-        xy_radius = numpy.sqrt(x_uarm**2 + y_uarm**2)
-        if x_uarm < 0 or not (self.__min_radius <= xy_radius <= self.__max_radius):
+        # TODO: This is not at all accurate, check if this is good enough.
+        xy_length = numpy.sqrt(x_uarm ** 2 + y_uarm ** 2)
+        xy_radius = abs(xy_length - self.__xy_base_offset)
+        z_radius = abs(z_uarm - self.__z_base_offset)
+        radius = numpy.sqrt(xy_radius ** 2 + z_radius ** 2)
+        if radius > (self.__max_radius_xy - self.__xy_base_offset) or x_uarm < 0 or xy_length <= self.__min_radius_xy:
             message = "Die eingegebenen Koordinaten sind nicht für den Roboter erreichbar."
             raise RobotError(ErrorCode.E0000, message)
-
-        # TODO: ADD GRIPPER ROTATION
 
         return {'x': x_uarm, 'y': y_uarm}
 
@@ -79,13 +89,15 @@ class GeometryHelper:
         :rtype: float
         """
         # angle from world x-axis to arm
-        alpha_1 = numpy.arctan2(y_uarm_old, x_uarm_old)
-        alpha_2 = numpy.arctan2(y_uarm_new, x_uarm_new)
+        alpha_1_rad = numpy.arctan2(y_uarm_old, x_uarm_old)
+        alpha_2_rad = numpy.arctan2(y_uarm_new, x_uarm_new)
+        alpha_1_deg = numpy.degrees(alpha_1_rad)
+        alpha_2_deg = numpy.degrees(alpha_2_rad)
         # angle from world x-axis to end effector orientation (-90 because of the asymetric servo range 0-180)
-        beta_1 = alpha_1 - 90.0 + wrist_old
+        beta_1 = alpha_1_deg - 90.0 + wrist_old
         # calculate the corresponding new wrist angle for new position, so that the orientation of the grabbed object
         # stays the same
-        wrist_new = beta_1 - alpha_2 + 90.0
+        wrist_new = beta_1 - alpha_2_deg + 90.0
         # check that the wrist angle is within the servos range
         if not (0 <= wrist_new <= 180):
             message = "Bei der gewünschten Bewegung kann die orientierung des Objekts nicht beibehalten werden," \
@@ -94,14 +106,30 @@ class GeometryHelper:
 
         return wrist_new
 
-    def transform_height_user_to_uarm(self, z_user):
+    def transform_height_user_to_uarm(self, z_user, x_uarm, y_uarm):
         """
         Transform z-position in user frame to uarm frame, check if values are valid.
-        :param z_user: z position in user frame
+        :param z_user: z-position in user frame
         :type z_user: int
+        :param x_uarm: x-position in uarm frame
+        :type x_uarm: float
+        :param y_uarm: y-position in uarm frame
+        :type y_uarm: float
         :return: z position in uarm frame in mm
         :rtype: float
         """
-        
+        # calculate height in uarm frame
+        z_uarm = self.__z_offset + z_user * self.__edge_length
+
+        # check if height is valid
+        xy_length = numpy.sqrt(x_uarm**2 + y_uarm**2)
+        xy_radius = abs(xy_length - self.__xy_base_offset)
+        z_radius = abs(z_uarm - self.__z_base_offset)
+        radius = numpy.sqrt(xy_radius**2 + z_radius**2)
+        if radius > (self.__max_radius_xy - self.__xy_base_offset) or z_uarm < self.__z_offset:
+            message = "Die gewünschte Höhe ist für den Roboter nicht erreichbar, bitte geben Sie einen niedrigeren Wert an."
+            raise RobotError(ErrorCode.E0004, message)
+
+        return z_uarm
 
 
