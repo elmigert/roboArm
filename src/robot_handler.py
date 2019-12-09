@@ -62,8 +62,29 @@ class RobotHandler:
         :type y_user: int
         """
         # transform frames of positions
-
         uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user)
+        x_uarm_new = uarm_dict['x']
+        y_uarm_new = uarm_dict['y']
+
+        # calculate new wrist angle that keeps object in the same orientation
+        wrist_angle_new = self.__geometry_helper.calculate_equal_wrist_rotation(self.__x_uarm, x_uarm_new,
+                                                                                self.__y_uarm, y_uarm_new,
+                                                                                self.__wrist_angle)
+
         # move arm
-        self.__swift.set_position(uarm_dict['x'], uarm_dict['y'])
+        self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
+        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle_new)
         self.__swift.flush_cmd()
+
+        # set new values
+        self.__x_uarm = x_uarm_new
+        self.__y_uarm = y_uarm_new
+        self.__wrist_angle = wrist_angle_new
+
+    def hight_new(self, z_user):
+        """
+        Move robot arm to z position in user frame.
+        :param z_user: new height in user frame
+        :type z_user: int
+        """
+
