@@ -32,7 +32,7 @@ class RobotError(Exception):
 
 
 class ErrorCode(Enum):
-    E0000 = 0    # GeometryHelper
-    E0001 = 1
-    E0002 = 2
+    E0000 = 0   # GeometryHelper
+    E0001 = 1   # RobotHandler
+    E0002 = 2   # RobotHandler
 

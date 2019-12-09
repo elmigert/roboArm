@@ -7,6 +7,7 @@ This file contains the RobotHandler class, which handles the communication with 
 import time
 
 from src.geometry_helper import GeometryHelper
+from src.robot_error import ErrorCode, RobotError
 from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
 
@@ -25,6 +26,25 @@ class RobotHandler:
         # initialize geometry helper
         self.__geometry_helper = GeometryHelper()
 
+        # get pose values in uarm frame
+        pose = self.__swift.get_position()
+        # check if successful
+        if isinstance(pose, list):
+            self.__x_uarm = pose[0]
+            self.__y_uarm = pose[1]
+            self.__z_uarm = pose[2]
+        else:
+            message = "Die Roboter Position konnte nicht gelesen werden, überprüfe die Verbindung."
+            raise RobotError(ErrorCode.E0001, message)
+
+        # get servo value in degrees
+        wrist_angle = self.__swift.get_servo_angle(servo_id=3)
+        if wrist_angle is not None:
+            self.__wrist_angle = wrist_angle
+        else:
+            message = "Die Servomotor Position konnte nicht gelesen werden, überprüfe die Verbindung."
+            raise RobotError(ErrorCode.E0002, message)
+
     def disconnect(self):
         """
         Disconnect robot.
@@ -42,6 +62,7 @@ class RobotHandler:
         :type y_user: int
         """
         # transform frames of positions
+
         uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user)
         # move arm
         self.__swift.set_position(uarm_dict['x'], uarm_dict['y'])

@@ -55,4 +55,6 @@ class GeometryHelper:
             message = "Die eingegebenen Koordinaten sind nicht für den Roboter erreichbar."
             raise RobotError(ErrorCode.E0000, message)
 
+        # TODO: ADD GRIPPER ROTATION
+
         return {'x': x_uarm, 'y': y_uarm}
