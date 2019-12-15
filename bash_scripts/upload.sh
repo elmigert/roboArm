@@ -19,6 +19,7 @@ ssh-copy-id mp@$address
 ## sync files
 echo ""
 echo "--- uploading ---"
+cd ..
 DIRS_TO_SYNC="uarm_python_sdk src"
 rsync -av -R $DIRS_TO_SYNC mp@$address:$dir \
   --delete

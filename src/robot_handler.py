@@ -25,6 +25,7 @@ class RobotHandler:
         self.__swift.set_mode(0)
         # reset arm to home
         self.__swift.reset(wait=True, speed=10000)
+
         # initialize geometry helper
         self.__geometry_helper = GeometryHelper()
 
@@ -39,13 +40,13 @@ class RobotHandler:
             message = "Die Roboter Position konnte nicht gelesen werden, überprüfe die Verbindung."
             raise RobotError(ErrorCode.E0001, message)
 
-        # get servo value in degrees
-        wrist_angle = self.__swift.get_servo_angle(servo_id=3)
-        if wrist_angle is not None:
-            self.__wrist_angle = wrist_angle
-        else:
-            message = "Die Servomotor Position konnte nicht gelesen werden, überprüfe die Verbindung."
-            raise RobotError(ErrorCode.E0002, message)
+        # set servo value in degrees
+        wrist_angle = 90.0
+        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle)
+        self.__wrist_angle = wrist_angle
+
+        # set sleep time to wait for servo to finish
+        self.__sleep_time = 1.0
 
     def disconnect(self):
         """
@@ -75,8 +76,9 @@ class RobotHandler:
 
         # move arm
         self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
-        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle_new)
+        self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
         self.__swift.flush_cmd()
+        # time.sleep(self.__sleep_time)
 
         # set new values
         self.__x_uarm = x_uarm_new
@@ -95,6 +97,7 @@ class RobotHandler:
         # move arm
         self.__swift.set_position(z=z_uarm_new)
         self.__swift.flush_cmd()
+        # time.sleep(self.__sleep_time)
 
         # set values
         self.__z_uarm = z_uarm_new
@@ -106,22 +109,27 @@ class RobotHandler:
         :type direction: DirectionKind
         """
         if direction is DirectionKind.Left:
-            wrist_angle_new = self.__wrist_angle + 90.0
-        elif direction is DirectionKind.Right:
             wrist_angle_new = self.__wrist_angle - 90.0
+        elif direction is DirectionKind.Right:
+            wrist_angle_new = self.__wrist_angle + 90.0
         else:
             raise NotImplementedError()
 
-        if not (0 < wrist_angle_new < 180):
+        if not (0 <= wrist_angle_new <= 180):
             message = "Der Greiffer kann nicht weiter in die gewünschte Richtung gedreht werden."
             raise RobotError(ErrorCode.E0005, message)
 
         # move robot
-        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle_new)
+        self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
         self.__swift.flush_cmd()
+        # time.sleep(self.__sleep_time)
 
         # set value
         self.__wrist_angle = wrist_angle_new
+
+    def set_wrist(self, angle):
+        self.__swift.set_wrist(angle=angle, wait=True)
+        self.__swift.flush_cmd()
 
     def pump_on(self):
         """

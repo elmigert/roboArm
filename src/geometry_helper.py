@@ -13,7 +13,7 @@ class GeometryHelper:
     """
     This class offers some transformations and helper functions between the uArm frame and an simplified user frame.
     """
-    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=10, xy_base_offset=174, z_base_offset=93.5, min_radius_xy=120, max_radius_xy=340):
+    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=0, xy_base_offset=174, z_base_offset=93.5, min_radius_xy=120, max_radius_xy=340):
         """
         Constructor, defines basic values of user frame.
         :param edge_length: side length of unit cube in mm
@@ -94,10 +94,10 @@ class GeometryHelper:
         alpha_1_deg = numpy.degrees(alpha_1_rad)
         alpha_2_deg = numpy.degrees(alpha_2_rad)
         # angle from world x-axis to end effector orientation (-90 because of the asymetric servo range 0-180)
-        beta_1 = alpha_1_deg - 90.0 + wrist_old
+        beta_1 = alpha_1_deg + 90.0 - wrist_old
         # calculate the corresponding new wrist angle for new position, so that the orientation of the grabbed object
         # stays the same
-        wrist_new = beta_1 - alpha_2_deg + 90.0
+        wrist_new = -beta_1 + alpha_2_deg + 90.0
         # check that the wrist angle is within the servos range
         if not (0 <= wrist_new <= 180):
             message = "Bei der gewünschten Bewegung kann die orientierung des Objekts nicht beibehalten werden," \
@@ -126,8 +126,9 @@ class GeometryHelper:
         xy_radius = abs(xy_length - self.__xy_base_offset)
         z_radius = abs(z_uarm - self.__z_base_offset)
         radius = numpy.sqrt(xy_radius**2 + z_radius**2)
-        if radius > (self.__max_radius_xy - self.__xy_base_offset) or z_uarm < self.__z_offset:
-            message = "Die gewünschte Höhe ist für den Roboter nicht erreichbar, bitte geben Sie einen niedrigeren Wert an."
+        # check if z_uarm value in workspace
+        if radius > (self.__max_radius_xy - self.__xy_base_offset) or z_uarm < self.__z_offset or z_uarm < self.__edge_length + self.__z_offset:
+            message = "Die gewünschte Höhe ist für den Roboter nicht erreichbar, bitte geben Sie einen anderen Wert an."
             raise RobotError(ErrorCode.E0004, message)
 
         return z_uarm
