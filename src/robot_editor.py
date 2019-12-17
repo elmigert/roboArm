@@ -8,20 +8,27 @@ import sys
 
 from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel
 
+from src.robot_error import RobotError
+from src.user_script import UserScript
+
 
 class RobotEditor(QWidget):
     """
     Robot Editor Class, defining UI for robot arm project.
     """
-    def __init__(self):
+    def __init__(self, robot_handler):
         """
         Initialize editor.
+        :param robot_handler: RobotHandler object Handling connection to uArm
+        :type robot_handler: RobotHandler
         """
         super(RobotEditor, self).__init__()
 
+        self.__robot_handler = robot_handler
+
         # first horizontal box
         self.__run_button = QPushButton('Start')
-        self.__stop_button = QPushButton('Stop')
+        self.__reset_button = QPushButton('Zurücksetzen')
         self.__challenge_choice = QComboBox()
         # TODO: read list of challenges from UserChallenge
         self.__challenge_choice.addItems(["Anfänger", "Fortgeschritten", "Experte"])
@@ -42,7 +49,7 @@ class RobotEditor(QWidget):
         # first horizontal box, buttons and drop-down menu
         hbox_1 = QHBoxLayout()
         hbox_1.addWidget(self.__run_button)
-        hbox_1.addWidget(self.__stop_button)
+        hbox_1.addWidget(self.__reset_button)
         hbox_1.addWidget(self.__challenge_choice)
         hbox_1.addStretch(1)
 
@@ -62,7 +69,7 @@ class RobotEditor(QWidget):
 
         # button connections
         self.__run_button.clicked.connect(self.run_script)
-        self.__stop_button.clicked.connect(self.stop)
+        self.__reset_button.clicked.connect(self.reset)
         self.__challenge_choice.activated[str].connect(self.choice_event)
 
 
@@ -74,16 +81,22 @@ class RobotEditor(QWidget):
 
     def run_script(self):
         """
-        Example run function.
+        Run script if possible, if not display error message.
         """
-        # TODO: Add UserScript / UserChallenge Connection
-        self.__output_console.setText(self.__text.toPlainText())
+        input_string = self.__text.toPlainText()
+        try:
+            user_script = UserScript(input_string, self.__robot_handler)
+            user_script.run_script(self.__robot_handler)
+            self.__output_console.setText("Skript wird ausgeführt.")
+        except RobotError as error:
+            self.__output_console.setText("FEHLER: " + error.message)
 
-    def stop(self):
+    def reset(self):
         """
-        Example stop function.
+        Move robot back to starting position.
         """
-        self.__output_console.setText("Stop!")
+        UserScript.reset(self.__robot_handler)
+        self.__output_console.setText("Zurücksetzen des Roboters.")
 
     def choice_event(self, text):
         """
@@ -91,6 +104,15 @@ class RobotEditor(QWidget):
         :param text: text of challenge_choice combox
         """
         self.__output_console.setText(text)
+
+    def write(self, text):
+        """
+        Write text in output console.
+        :param text: text to be written
+        :type text: str
+        """
+        self.__output_console.setText(text)
+
 
 # app = QApplication(sys.argv)
 # writer = RobotEditor()

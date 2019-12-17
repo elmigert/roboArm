@@ -8,6 +8,27 @@ import unittest
 
 from src.robot_error import RobotError, ErrorCode
 from src.user_script import UserScript
+from src.robot_handler import RobotHandler
+
+
+class MockRobotHandler:
+    """
+    Mock robot handler class
+    """
+    def __init__(self):
+        pass
+
+    def position_new(self, position):
+        pass
+
+    def height_new(self, height_list):
+        pass
+
+    def pump_on(self):
+        pass
+
+    def pump_off(self):
+        pass
 
 
 class TestUserScript(unittest.TestCase):
@@ -19,4 +40,19 @@ class TestUserScript(unittest.TestCase):
         Test initialization.
         """
         test_input_string = "position_neu(1, 2)   \nhoehe_neu(2) \n  \n \n \n"
+        mock_robot = MockRobotHandler()
+        user_script_1 = UserScript(test_input_string, mock_robot)
+        self.assertEqual(user_script_1._UserScript__function_calls[0]["function"], mock_robot.position_new)
+        self.assertEqual(user_script_1._UserScript__function_calls[1]["function"], mock_robot.height_new)
+        self.assertListEqual(user_script_1._UserScript__function_calls[0]["args"], [1, 2])
+        self.assertListEqual(user_script_1._UserScript__function_calls[1]["args"], [2])
+
+    def test_run(self):
+        """
+        Test running functions defined in input string
+        """
+        test_input_string = "position_neu(1, 2)   \nhoehe_neu(2) \n  \n \n \n pumpe_an() \n  pumpe_aus()"
         user_script_1 = UserScript(test_input_string)
+        mock_robot = MockRobotHandler()
+        # user_script_1.run_script(mock_robot)
+        # TODO: Mock swift etc and implement unit test.

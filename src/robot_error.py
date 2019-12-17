@@ -41,3 +41,9 @@ class ErrorCode(Enum):
     E0003 = 3   # GeometryHelper
     E0004 = 4   # GeometryHelper
     E0005 = 5   # RobotHandler
+    E0006 = 6   # UserScript
+    E0007 = 7   # UserScript
+    E0008 = 8   # UserScript
+    E0009 = 9   # UserScript
+    E0010 = 10  # UserScript
+    E0011 = 11  # UserScript
