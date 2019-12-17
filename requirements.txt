@@ -10,3 +10,6 @@ pytest-cov==2.7.1
 # Numpy
 # - linear algebra tool
 numpy==1.16.4
+
+# Qt Frontend requirements
+PyQt5==5.13.2
