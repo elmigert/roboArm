@@ -4,7 +4,6 @@
 This file contains the RobotEditor class.
 """
 
-
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel
 
 from src.robot_error import RobotError
@@ -39,46 +38,45 @@ class RobotEditor(QWidget):
         # third horizontal box
         self.__output_console = QLabel()
 
-        self.init_ui()
+        self.__init_ui()
 
-    def init_ui(self):
+    def __init_ui(self):
         """
         Initialize UI.
         """
         # first horizontal box, buttons and drop-down menu
-        hbox_1 = QHBoxLayout()
-        hbox_1.addWidget(self.__run_button)
-        hbox_1.addWidget(self.__reset_button)
-        hbox_1.addWidget(self.__challenge_choice)
-        hbox_1.addStretch(1)
+        h_box_1 = QHBoxLayout()
+        h_box_1.addWidget(self.__run_button)
+        h_box_1.addWidget(self.__reset_button)
+        h_box_1.addWidget(self.__challenge_choice)
+        h_box_1.addStretch(1)
 
         # second  horizontal box, line numbering and text editor
-        hbox_2 = QHBoxLayout()
-        hbox_2.addWidget(self.__text)
+        h_box_2 = QHBoxLayout()
+        h_box_2.addWidget(self.__text)
 
         # third horizontal box, output console
-        hbox_3 = QHBoxLayout()
-        hbox_3.addWidget(self.__output_console)
+        h_box_3 = QHBoxLayout()
+        h_box_3.addWidget(self.__output_console)
 
         # fill vertical box
-        vbox = QVBoxLayout()
-        vbox.addLayout(hbox_1)
-        vbox.addLayout(hbox_2)
-        vbox.addLayout(hbox_3)
+        v_box = QVBoxLayout()
+        v_box.addLayout(h_box_1)
+        v_box.addLayout(h_box_2)
+        v_box.addLayout(h_box_3)
 
         # button connections
-        self.__run_button.clicked.connect(self.run_script)
-        self.__reset_button.clicked.connect(self.reset)
-        self.__challenge_choice.activated[str].connect(self.choice_event)
-
+        self.__run_button.clicked.connect(self.__run_script)
+        self.__reset_button.clicked.connect(self.__reset)
+        self.__challenge_choice.activated[str].connect(self.__choice_event)
 
         # layout
-        self.setLayout(vbox)
+        self.setLayout(v_box)
         self.setWindowTitle('Robot Editor')
 
         self.show()
 
-    def run_script(self):
+    def __run_script(self):
         """
         Run script if possible, if not display error message.
         """
@@ -90,14 +88,14 @@ class RobotEditor(QWidget):
         except RobotError as error:
             self.__output_console.setText("FEHLER: " + error.message)
 
-    def reset(self):
+    def __reset(self):
         """
         Move robot back to starting position.
         """
         UserScript.reset(self.__robot_handler)
         self.__output_console.setText("Zurücksetzen des Roboters.")
 
-    def choice_event(self, text):
+    def __choice_event(self, text):
         """
         Example choice_change event.
         :param text: text of challenge_choice combox

@@ -49,6 +49,31 @@ class TestUserScript(unittest.TestCase):
         self.assertListEqual(user_script_1._UserScript__function_calls[0]["args"], [1, 2])
         self.assertListEqual(user_script_1._UserScript__function_calls[1]["args"], [2])
 
+        # error check
+        with self.assertRaises(RobotError) as raised:
+            UserScript("hoehe_neu(", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0006)
+
+        with self.assertRaises(RobotError) as raised:
+            UserScript("position_neu()", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0007)
+
+        with self.assertRaises(RobotError) as raised:
+            UserScript("hoehe_neu()", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0008)
+
+        with self.assertRaises(RobotError) as raised:
+            UserScript("pumpe_an(1)", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0009)
+
+        with self.assertRaises(RobotError) as raised:
+            UserScript("pumpe_aus(1)", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0010)
+
+        with self.assertRaises(RobotError) as raised:
+            UserScript("hoehe_()", mock_robot)
+        self.assertEqual(raised.exception.error_code, ErrorCode.E0011)
+
     def test_run_reset(self):
         """
         Test running functions defined in input string
@@ -59,4 +84,3 @@ class TestUserScript(unittest.TestCase):
         user_script_1 = UserScript(test_input_string, mock_robot)
         user_script_1.run_script(mock_robot)
         user_script_1.reset(mock_robot)
-

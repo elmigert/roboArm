@@ -26,6 +26,7 @@ class UserScript:
         line_list = [i for i in input_string.split("\n") if i != ""]
 
         self.__function_calls = list()
+        # TODO: Refactor into different function
         # map each string to function and argument
         for line in line_list:
             clean_data = UserScript.__cleanup_line(line)

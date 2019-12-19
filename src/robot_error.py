@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-This file contains the RobotError class.
+This file contains the RobotError and ErrorCode class.
 """
 
 from enum import Enum
