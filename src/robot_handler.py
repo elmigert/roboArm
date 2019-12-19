@@ -56,14 +56,20 @@ class RobotHandler:
         time.sleep(3)
         self.__swift.disconnect()
 
-    def position_new(self, x_user, y_user):
+    def reset(self):
+        """
+        Reset robot, go back to start position.
+        """
+        self.__swift.reset(wait=True, speed=10000)
+        self.__swift.flush_cmd()
+
+    def position_new(self, position_user):
         """
         Move robot arm to new position x, y in user frame.
-        :param x_user: new x position in user frame.
-        :type x_user: int
-        :param y_user: new y position in user frame.
-        :type y_user: int
+        :param position_user: position in user frame [x_user, y_user]
+        :type position_user: list[int]
         """
+        [x_user, y_user] = position_user
         # transform frames of positions
         uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user, self.__z_uarm)
         x_uarm_new = uarm_dict['x']
@@ -85,12 +91,13 @@ class RobotHandler:
         self.__y_uarm = y_uarm_new
         self.__wrist_angle = wrist_angle_new
 
-    def height_new(self, z_user):
+    def height_new(self, z_user_list):
         """
         Move robot arm to z position in user frame.
-        :param z_user: new height in user frame
-        :type z_user: int
+        :param z_user_list: new height in user frame [z_user]
+        :type z_user_list: list[int]
         """
+        z_user = z_user_list[0]
         # calculate new height in uarm frame
         z_uarm_new = self.__geometry_helper.transform_height_user_to_uarm(z_user, self.__x_uarm, self.__y_uarm)
 
@@ -102,6 +109,7 @@ class RobotHandler:
         # set values
         self.__z_uarm = z_uarm_new
 
+    # DEPRECATED
     def rotate_gripper(self, direction):
         """
         Rotate gripper either 90° left or right, depending on direction.
@@ -127,6 +135,7 @@ class RobotHandler:
         # set value
         self.__wrist_angle = wrist_angle_new
 
+    # DEPRECATED
     def set_wrist(self, angle):
         self.__swift.set_wrist(angle=angle, wait=True)
         self.__swift.flush_cmd()

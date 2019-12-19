@@ -40,7 +40,7 @@ class TestGeometryHelper(unittest.TestCase):
         """
         geometry_helper = GeometryHelper()
         wrist_angle_1 = geometry_helper.calculate_equal_wrist_rotation(100, 100, 100, 0, 45)
-        test_wrist_angle_1 = 90
+        test_wrist_angle_1 = 0
         self.assertEqual(wrist_angle_1, test_wrist_angle_1)
 
         wrist_angle_2 = geometry_helper.calculate_equal_wrist_rotation(100, 100, 100, 100, 45)
@@ -48,7 +48,7 @@ class TestGeometryHelper(unittest.TestCase):
         self.assertEqual(wrist_angle_2, test_wrist_angle_2)
 
         with self.assertRaises(RobotError) as raised:
-            wrist_angle_3 = geometry_helper.calculate_equal_wrist_rotation(100, 100, 100, -100, 135)
+            wrist_angle_3 = geometry_helper.calculate_equal_wrist_rotation(100, 100, 100, -100, -135)
         self.assertEqual(raised.exception.error_code, ErrorCode.E0003)
 
     def test_transform_height_user_to_uarm(self):
@@ -57,11 +57,11 @@ class TestGeometryHelper(unittest.TestCase):
         """
         geometry_helper = GeometryHelper()
         z_uarm_1 = geometry_helper.transform_height_user_to_uarm(1, 100, 100)
-        test_z_uarm_1 = 50.0
+        test_z_uarm_1 = 40.0
         self.assertEqual(z_uarm_1, test_z_uarm_1)
 
         z_uarm_2 = geometry_helper.transform_height_user_to_uarm(2, 200, 200)
-        test_z_uarm_2 = 90.0
+        test_z_uarm_2 = 80.0
         self.assertEqual(z_uarm_2, test_z_uarm_2)
 
         with self.assertRaises(RobotError) as raised:
