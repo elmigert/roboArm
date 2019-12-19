@@ -22,6 +22,7 @@ def main():
         robot_handler = RobotHandler()
         text = "Verbindung mit uArm erfolgreich!"
     except Exception:
+        # if connection failed, connect to mocked robot handler
         robot_handler = MockRobotHandler()
         text = "Verbindung mit uArm fehlgeschlagen!"
 

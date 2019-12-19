@@ -98,6 +98,7 @@ class UserScript:
                 function(argument)
             else:
                 function()
+        # TODO: Add success check here.
 
     @staticmethod
     def reset(robot_handler):

@@ -4,9 +4,8 @@
 This file contains the RobotEditor class.
 """
 
-import sys
 
-from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel
 
 from src.robot_error import RobotError
 from src.user_script import UserScript
@@ -102,6 +101,7 @@ class RobotEditor(QWidget):
         """
         Example choice_change event.
         :param text: text of challenge_choice combox
+        :type text: str
         """
         self.__output_console.setText(text)
 
@@ -112,8 +112,3 @@ class RobotEditor(QWidget):
         :type text: str
         """
         self.__output_console.setText(text)
-
-
-# app = QApplication(sys.argv)
-# writer = RobotEditor()
-# sys.exit(app.exec_())

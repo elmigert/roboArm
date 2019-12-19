@@ -8,12 +8,11 @@ import unittest
 
 from src.robot_error import RobotError, ErrorCode
 from src.user_script import UserScript
-from src.robot_handler import RobotHandler
 
 
 class MockRobotHandler:
     """
-    Mock robot handler class
+    Mock robot handler class.
     """
     def __init__(self):
         pass
@@ -28,6 +27,9 @@ class MockRobotHandler:
         pass
 
     def pump_off(self):
+        pass
+
+    def reset(self):
         pass
 
 
@@ -47,12 +49,14 @@ class TestUserScript(unittest.TestCase):
         self.assertListEqual(user_script_1._UserScript__function_calls[0]["args"], [1, 2])
         self.assertListEqual(user_script_1._UserScript__function_calls[1]["args"], [2])
 
-    def test_run(self):
+    def test_run_reset(self):
         """
         Test running functions defined in input string
         """
         test_input_string = "position_neu(1, 2)   \nhoehe_neu(2) \n  \n \n \n pumpe_an() \n  pumpe_aus()"
-        user_script_1 = UserScript(test_input_string)
         mock_robot = MockRobotHandler()
-        # user_script_1.run_script(mock_robot)
-        # TODO: Mock swift etc and implement unit test.
+
+        user_script_1 = UserScript(test_input_string, mock_robot)
+        user_script_1.run_script(mock_robot)
+        user_script_1.reset(mock_robot)
+
