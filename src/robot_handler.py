@@ -23,27 +23,17 @@ class RobotHandler:
         self.__swift.waiting_ready(timeout=5)
         # set general mode: 0
         self.__swift.set_mode(0)
-        # reset arm to home
-        self.__swift.reset(wait=True, speed=10000)
 
         # initialize geometry helper
         self.__geometry_helper = GeometryHelper()
 
-        # get pose values in uarm frame
-        pose = self.__swift.get_position()
-        # check if successful
-        if isinstance(pose, list):
-            self.__x_uarm = pose[0]
-            self.__y_uarm = pose[1]
-            self.__z_uarm = pose[2]
-        else:
-            message = "Die Roboter Position konnte nicht gelesen werden, überprüfe die Verbindung."
-            raise RobotError(ErrorCode.E0001, message)
-
-        # set servo value in degrees
-        wrist_angle = 90.0
-        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle)
-        self.__wrist_angle = wrist_angle
+        # initialize empty position values
+        self.__x_uarm = 0
+        self.__y_uarm = 0
+        self.__z_uarm = 0
+        self.__wrist_angle = 0
+        # set values
+        self.reset()
 
         # set sleep time to wait for servo to finish
         self.__sleep_time = 1.0
@@ -60,7 +50,24 @@ class RobotHandler:
         """
         Reset robot, go back to start position.
         """
+        # reset arm to home
         self.__swift.reset(wait=True, speed=10000)
+        # get pose values in uarm frame
+        pose = self.__swift.get_position()
+        # check if successful
+        if isinstance(pose, list):
+            self.__x_uarm = pose[0]
+            self.__y_uarm = pose[1]
+            self.__z_uarm = pose[2]
+        else:
+            message = "Die Roboter Position konnte nicht gelesen werden, überprüfe die Verbindung."
+            raise RobotError(ErrorCode.E0001, message)
+
+        # set servo value in degrees
+        wrist_angle = 90.0
+        self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle)
+        self.__wrist_angle = wrist_angle
+
         self.__swift.flush_cmd()
 
     def position_new(self, position_user):
@@ -84,7 +91,7 @@ class RobotHandler:
         self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
         self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
         self.__swift.flush_cmd()
-        # time.sleep(self.__sleep_time)
+        time.sleep(self.__sleep_time)
 
         # set new values
         self.__x_uarm = x_uarm_new
@@ -104,7 +111,7 @@ class RobotHandler:
         # move arm
         self.__swift.set_position(z=z_uarm_new)
         self.__swift.flush_cmd()
-        # time.sleep(self.__sleep_time)
+        time.sleep(self.__sleep_time)
 
         # set values
         self.__z_uarm = z_uarm_new
@@ -146,6 +153,7 @@ class RobotHandler:
         """
         self.__swift.set_pump(on=True)
         self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
 
     def pump_off(self):
         """
@@ -153,3 +161,4 @@ class RobotHandler:
         """
         self.__swift.set_pump(on=False)
         self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
