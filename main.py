@@ -21,10 +21,11 @@ def main():
     try:
         robot_handler = RobotHandler()
         text = "Verbindung mit uArm erfolgreich!"
-    except Exception:
+    except Exception as error:
         # if connection failed, connect to mocked robot handler
         robot_handler = MockRobotHandler()
         text = "Verbindung mit uArm fehlgeschlagen!"
+        print("Error: " + str(error))
 
     # --- start main loop
     app = QApplication(sys.argv)
