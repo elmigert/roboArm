@@ -24,6 +24,10 @@ class RobotHandler:
         # set general mode: 0
         self.__swift.set_mode(0)
 
+        # set measured wrist servo scaling offset
+        self.__lower_servo_limit = 5.0
+        self.__higher_servo_limit = 175.0
+
         # initialize geometry helper
         self.__geometry_helper = GeometryHelper()
 
@@ -162,3 +166,16 @@ class RobotHandler:
         self.__swift.set_pump(on=False)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
+
+    def __wrist_servo_correction(self, wrist_angle):
+        """
+        Correct wrist servo offset / scaling.
+        :param wrist_angle: geometrically calculated wrist angle
+        :type wrist_angle: float
+        :return: corrected / scaled wrist angle according to servo offset
+        :rtype: float
+        """
+        # linearly scaling angle to real wrist limits
+        real_wrist_angle =\
+            90.0 + (wrist_angle - 90.0) * (90 / ((self.__higher_servo_limit - self.__lower_servo_limit) / 2.0))
+        return real_wrist_angle
