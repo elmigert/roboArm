@@ -25,13 +25,15 @@ class UserScript:
         """
         # TODO (ALR): The coordinates should not be hardcoded here.
         self.__user_challenge = UserChallenge(challenge, [3, 8, 2])
+        # reset arm so values dont change
+        robot_handler.reset()
         # remove all spaces
         input_string = input_string.replace(" ", "")
         # split strings at newline, only keep substrings if they are not empty
         line_list = [i for i in input_string.split("\n") if i != ""]
 
         self.__function_calls = list()
-        # TODO: Refactor into different function
+        # TODO (ALR): Refactor into different function
         # map each string to function and argument
         for line in line_list:
             clean_data = UserScript.__cleanup_line(line)
@@ -81,7 +83,7 @@ class UserScript:
             raise RobotError(ErrorCode.E0006, message)
         function_string = line[:argument_begin]
         argument_string = line[argument_begin + 1:argument_end]
-        # TODO: Error check?
+        # TODO (ALR): Error check?
         if len(argument_string) > 0:
             arguments = [int(i) for i in argument_string.split(",")]
         else:
@@ -102,7 +104,9 @@ class UserScript:
                 function(argument)
             else:
                 function()
-        # TODO: Add success check here.
+            # update user challenge
+            self.__user_challenge.record_robot(robot_handler, function, argument)
+        # TODO (ALR): Add success check here.
 
     @staticmethod
     def reset(robot_handler):

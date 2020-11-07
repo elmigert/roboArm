@@ -24,8 +24,9 @@ class BlockKind(Enum):
     """
     Enum class to distinguish block kinds.
     """
+    Null = 0
     One = 1
-    Three = 2
+    Three = 2 # assume direction of 1x3x1 block only in y direction
 
 
 class UserChallenge:
@@ -50,14 +51,14 @@ class UserChallenge:
         # check if challenge is not challenge kind
         if type(challenge) is not ChallengeKind:
             if challenge == ChallengeKind.Beginner.value:
-                self.__challenge = ChallengeKind.Beginner
+                self.__challenge = self.__all_challenges[ChallengeKind.Beginner]
             else:
                 message = "Die ausgewählte Schwierigkeitsstufe wurde noch nicht implementiert, bitte wählen Sie eine " \
                           "andere aus."
                 raise RobotError(ErrorCode.E0012, message)
 
         self.__coordinates = start_coordinates
-        self.__pump = False
+        self.__block = BlockKind.Null
 
     def record_robot(self, robot, function, args):
         """
@@ -74,10 +75,33 @@ class UserChallenge:
             self.__coordinates[0] = args[0]
             self.__coordinates[1] = args[1]
         elif function == robot.height_new:
-            self.__coordinates[2] = args[2]
+            self.__coordinates[2] = args[0]
         elif function == robot.pump_on:
-            self.__pump = True
+            # we can change the coordinates in start challenge here, since it is reinitialized every time a script is run
+            if self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
+                self.__challenge[ChallengeKind.StartPosition][BlockKind.One].remove(self.__coordinates)
+                self.__block = BlockKind.One
+            elif self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
+                self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].remove(self.__coordinates)
+                self.__block = BlockKind.Three
+            else:
+                message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
+                raise RobotError(ErrorCode.E0013, message)
         elif function == robot.pump_off:
-            self.__pump = False
+            # calculate coordinates below gripper
+            coordinates = self.__coordinates.copy()
+            coordinates[2] -= 1
+            # check if a block is held, and there is either ground or another block below
+            # TODO (ALR): We don't check if the block is dropped from the air here, might need to add check.
+            if self.__block is BlockKind.One:
+                self.__challenge[ChallengeKind.StartPosition][BlockKind.One].append(self.__coordinates.copy())
+            elif self.__block is BlockKind.Three:
+                self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].append(self.__coordinates.copy())
+            else:
+                message = "Die Pumpe kann nur deaktiviert werden, um einen Block auf das Feld oder einen anderen Block" \
+                          "abzulegen."
+                raise RobotError(ErrorCode.E0014, message)
+            self.__block = BlockKind.Null
         else:
             raise NotImplementedError()
+        pass
