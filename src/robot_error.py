@@ -47,3 +47,4 @@ class ErrorCode(Enum):
     E0009 = 9   # UserScript
     E0010 = 10  # UserScript
     E0011 = 11  # UserScript
+    E0012 = 12  # UserChallenge

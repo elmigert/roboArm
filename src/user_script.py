@@ -6,20 +6,25 @@ This file contains the UserScript class.
 
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
+from src.user_challenge import UserChallenge, ChallengeKind
 
 
 class UserScript:
     """
     The UserScript class handles input given by the frontend, checks it and converts it to robot_handler functions.
     """
-    def __init__(self, input_string, robot_handler):
+    def __init__(self, input_string, robot_handler, challenge):
         """
         Initialize UserScript object from frontend input-string.
         :param input_string: string typed by user in UI
         :type input_string: str
         :param robot_handler: RobotHandler object, managing connection to uArm
         :type robot_handler: RobotHandler
+        :param challenge: challenge kind
+        :type challenge: str
         """
+        # TODO (ALR): The coordinates should not be hardcoded here.
+        self.__user_challenge = UserChallenge(challenge, [3, 8, 2])
         # remove all spaces
         input_string = input_string.replace(" ", "")
         # split strings at newline, only keep substrings if they are not empty
@@ -87,8 +92,6 @@ class UserScript:
     def run_script(self, robot_handler):
         """
         Run script functions on robot.
-        :param robot_handler: RobotHandler object, managing connection to uArm
-        :type robot_handler: RobotHandler
         """
         # run functions
         for function_call in self.__function_calls:

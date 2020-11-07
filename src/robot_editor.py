@@ -28,8 +28,8 @@ class RobotEditor(QWidget):
         self.__run_button = QPushButton('Start')
         self.__reset_button = QPushButton('Zurücksetzen')
         self.__challenge_choice = QComboBox()
-        # TODO: read list of challenges from UserChallenge
-        self.__challenge_choice.addItems(["Anfänger", "Fortgeschritten", "Experte"])
+        # TODO: read list of challenges from UserChallenge, add more challenges
+        self.__challenge_choice.addItems(["Anfänger"])
 
         # second horizontal box
         self.__text = QPlainTextEdit(self)
@@ -82,7 +82,7 @@ class RobotEditor(QWidget):
         """
         input_string = self.__text.toPlainText()
         try:
-            user_script = UserScript(input_string, self.__robot_handler)
+            user_script = UserScript(input_string, self.__robot_handler, self.__challenge_choice.currentText())
             user_script.run_script(self.__robot_handler)
             self.__output_console.setText("Skript wird ausgeführt.")
         except RobotError as error:
