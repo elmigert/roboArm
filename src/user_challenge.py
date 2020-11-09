@@ -26,7 +26,7 @@ class BlockKind(Enum):
     """
     Null = 0
     One = 1
-    Three = 2 # assume direction of 1x3x1 block only in y direction
+    Three = 2  # assume direction of 1x3x1 block only in y direction
 
 
 class UserChallenge:

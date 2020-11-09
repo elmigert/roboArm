@@ -33,7 +33,7 @@ class UserScript:
         line_list = [i for i in input_string.split("\n") if i != ""]
 
         self.__function_calls = list()
-        # TODO (ALR): Refactor into different function
+        # TODO (ALR): Refactor into different functions.
         # map each string to function and argument
         for line in line_list:
             clean_data = UserScript.__cleanup_line(line)
@@ -41,14 +41,14 @@ class UserScript:
             arguments = clean_data["arguments"]
 
             # generate function mapping
-            if function_string == "position_neu":
+            if function_string == "position":
                 if len(arguments) != 2:
-                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position_neu(5, 5)"
+                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position(5, 5)"
                     raise RobotError(ErrorCode.E0007, message)
                 self.__function_calls.append({"function": robot_handler.position_new, "args": arguments})
-            elif function_string == "hoehe_neu":
+            elif function_string == "hoehe":
                 if len(arguments) != 1:
-                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe_neu(2)"
+                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
                     raise RobotError(ErrorCode.E0008, message)
                 self.__function_calls.append({"function": robot_handler.height_new, "args": arguments})
             elif function_string == "pumpe_an":
@@ -79,7 +79,7 @@ class UserScript:
         argument_end = line.find(")")
         # check if function has brackets
         if argument_begin == -1 or argument_end == -1:
-            message = "Funktions Argumente müssen mit runden Klammern umgeben werden. Bsp.: position_neu(1, 2) pumpe_an()"
+            message = "Funktions Argumente müssen mit runden Klammern umgeben werden. Bsp.: position(1, 2) pumpe_an()"
             raise RobotError(ErrorCode.E0006, message)
         function_string = line[:argument_begin]
         argument_string = line[argument_begin + 1:argument_end]
@@ -94,6 +94,8 @@ class UserScript:
     def run_script(self, robot_handler):
         """
         Run script functions on robot.
+        :return: True if script was sucessful
+        :rtype: bool
         """
         # run functions
         for function_call in self.__function_calls:
@@ -106,7 +108,7 @@ class UserScript:
                 function()
             # update user challenge
             self.__user_challenge.record_robot(robot_handler, function, argument)
-        # TODO (ALR): Add success check here.
+        return self.__user_challenge.success()
 
     @staticmethod
     def reset(robot_handler):
