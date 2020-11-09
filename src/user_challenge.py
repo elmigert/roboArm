@@ -41,6 +41,7 @@ class UserChallenge:
         :param start_coordinates: start position and height of robot in user frame [x, y, z]
         :type start_coordinates: list
         """
+        # TODO (ALR): Add objects for blocks.
         # hard-coded start and end positions of blocks
         self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[0, 0, 1], [2, 2, 1], [0, 15, 1], [2, 13, 1]],
                                                                                         BlockKind.Three: [[6, 6, 1]]},
@@ -77,7 +78,8 @@ class UserChallenge:
         elif function == robot.height_new:
             self.__coordinates[2] = args[0]
         elif function == robot.pump_on:
-            # we can change the coordinates in start challenge here, since it is reinitialized every time a script is run
+            # we can change the coordinates in start challenge here, since it is reinitialized every time a script is
+            # run
             if self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
                 self.__challenge[ChallengeKind.StartPosition][BlockKind.One].remove(self.__coordinates)
                 self.__block = BlockKind.One
@@ -104,4 +106,28 @@ class UserChallenge:
             self.__block = BlockKind.Null
         else:
             raise NotImplementedError()
-        pass
+
+    def success(self):
+        """
+        Check if the challenge was successful by comparing the current and end positions of the blocks.
+        This function would be a lot nicer if objects were used for blocks/positions...
+        :return: True if end and current position of all blocks is equal
+        :rtype: bool
+        """
+        current_set_b1 = set()
+        current_set_b3 = set()
+        end_set_b1 = set()
+        end_set_b3 = set()
+
+        # change nested lists to sets of tuples to easily compare them
+        [current_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]]
+        [current_set_b3.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]]
+        [end_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.EndPosition][BlockKind.One]]
+        [end_set_b3.add(tuple(element)) for element in self.__challenge[ChallengeKind.EndPosition][BlockKind.Three]]
+
+        d_1 = current_set_b1 - end_set_b1
+        d_3 = current_set_b3 - end_set_b3
+
+        if len(d_1) == 0 and len(d_3) == 0:
+            return True
+        return False
