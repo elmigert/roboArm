@@ -41,7 +41,7 @@ class TestUserScript(unittest.TestCase):
         """
         Test initialization.
         """
-        test_input_string = "position_neu(1, 2)   \nhoehe_neu(2) \n  \n \n \n"
+        test_input_string = "position(1, 2)   \nhoehe(2) \n  \n \n \n"
         mock_robot = MockRobotHandler()
         user_script_1 = UserScript(test_input_string, mock_robot)
         self.assertEqual(user_script_1._UserScript__function_calls[0]["function"], mock_robot.position_new)
@@ -51,15 +51,15 @@ class TestUserScript(unittest.TestCase):
 
         # error check
         with self.assertRaises(RobotError) as raised:
-            UserScript("hoehe_neu(", mock_robot)
+            UserScript("hoehe(", mock_robot)
         self.assertEqual(raised.exception.error_code, ErrorCode.E0006)
 
         with self.assertRaises(RobotError) as raised:
-            UserScript("position_neu()", mock_robot)
+            UserScript("position()", mock_robot)
         self.assertEqual(raised.exception.error_code, ErrorCode.E0007)
 
         with self.assertRaises(RobotError) as raised:
-            UserScript("hoehe_neu()", mock_robot)
+            UserScript("hoehe()", mock_robot)
         self.assertEqual(raised.exception.error_code, ErrorCode.E0008)
 
         with self.assertRaises(RobotError) as raised:
@@ -78,7 +78,7 @@ class TestUserScript(unittest.TestCase):
         """
         Test running functions defined in input string
         """
-        test_input_string = "position_neu(1, 2)   \nhoehe_neu(2) \n  \n \n \n pumpe_an() \n  pumpe_aus()"
+        test_input_string = "position(1, 2)   \nhoehe(2) \n  \n \n \n pumpe_an() \n  pumpe_aus()"
         mock_robot = MockRobotHandler()
 
         user_script_1 = UserScript(test_input_string, mock_robot)

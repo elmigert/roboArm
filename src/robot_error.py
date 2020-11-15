@@ -37,7 +37,7 @@ class ErrorCode(Enum):
     """
     E0000 = 0   # GeometryHelper
     E0001 = 1   # RobotHandler
-    E0002 = 2
+    E0002 = 2   # RobotHandler
     E0003 = 3   # GeometryHelper
     E0004 = 4   # GeometryHelper
     E0005 = 5   # RobotHandler
@@ -47,3 +47,6 @@ class ErrorCode(Enum):
     E0009 = 9   # UserScript
     E0010 = 10  # UserScript
     E0011 = 11  # UserScript
+    E0012 = 12  # UserChallenge
+    E0013 = 13  # UserChallenge
+    E0014 = 14  # UserChallenge

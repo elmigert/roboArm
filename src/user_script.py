@@ -6,27 +6,34 @@ This file contains the UserScript class.
 
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
+from src.user_challenge import UserChallenge, ChallengeKind
 
 
 class UserScript:
     """
     The UserScript class handles input given by the frontend, checks it and converts it to robot_handler functions.
     """
-    def __init__(self, input_string, robot_handler):
+    def __init__(self, input_string, robot_handler, challenge):
         """
         Initialize UserScript object from frontend input-string.
         :param input_string: string typed by user in UI
         :type input_string: str
         :param robot_handler: RobotHandler object, managing connection to uArm
         :type robot_handler: RobotHandler
+        :param challenge: challenge kind
+        :type challenge: str
         """
+        # TODO (ALR): The coordinates should not be hardcoded here.
+        self.__user_challenge = UserChallenge(challenge, [3, 8, 2])
+        # reset arm so values dont change
+        robot_handler.reset()
         # remove all spaces
         input_string = input_string.replace(" ", "")
         # split strings at newline, only keep substrings if they are not empty
         line_list = [i for i in input_string.split("\n") if i != ""]
 
         self.__function_calls = list()
-        # TODO: Refactor into different function
+        # TODO (ALR): Refactor into different functions.
         # map each string to function and argument
         for line in line_list:
             clean_data = UserScript.__cleanup_line(line)
@@ -34,14 +41,14 @@ class UserScript:
             arguments = clean_data["arguments"]
 
             # generate function mapping
-            if function_string == "position_neu":
+            if function_string == "position":
                 if len(arguments) != 2:
-                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position_neu(5, 5)"
+                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position(5, 5)"
                     raise RobotError(ErrorCode.E0007, message)
                 self.__function_calls.append({"function": robot_handler.position_new, "args": arguments})
-            elif function_string == "hoehe_neu":
+            elif function_string == "hoehe":
                 if len(arguments) != 1:
-                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe_neu(2)"
+                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
                     raise RobotError(ErrorCode.E0008, message)
                 self.__function_calls.append({"function": robot_handler.height_new, "args": arguments})
             elif function_string == "pumpe_an":
@@ -72,11 +79,11 @@ class UserScript:
         argument_end = line.find(")")
         # check if function has brackets
         if argument_begin == -1 or argument_end == -1:
-            message = "Funktions Argumente müssen mit runden Klammern umgeben werden. Bsp.: position_neu(1, 2) pumpe_an()"
+            message = "Funktions Argumente müssen mit runden Klammern umgeben werden. Bsp.: position(1, 2) pumpe_an()"
             raise RobotError(ErrorCode.E0006, message)
         function_string = line[:argument_begin]
         argument_string = line[argument_begin + 1:argument_end]
-        # TODO: Error check?
+        # TODO (ALR): Error check?
         if len(argument_string) > 0:
             arguments = [int(i) for i in argument_string.split(",")]
         else:
@@ -87,8 +94,8 @@ class UserScript:
     def run_script(self, robot_handler):
         """
         Run script functions on robot.
-        :param robot_handler: RobotHandler object, managing connection to uArm
-        :type robot_handler: RobotHandler
+        :return: True if script was sucessful
+        :rtype: bool
         """
         # run functions
         for function_call in self.__function_calls:
@@ -99,7 +106,9 @@ class UserScript:
                 function(argument)
             else:
                 function()
-        # TODO: Add success check here.
+            # update user challenge
+            self.__user_challenge.record_robot(robot_handler, function, argument)
+        return self.__user_challenge.success()
 
     @staticmethod
     def reset(robot_handler):

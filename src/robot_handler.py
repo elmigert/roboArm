@@ -8,7 +8,6 @@ import time
 
 from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
-from src.direction_kind import DirectionKind
 from src.geometry_helper import GeometryHelper
 from src.robot_error import ErrorCode, RobotError
 
@@ -24,6 +23,13 @@ class RobotHandler:
         # set general mode: 0
         self.__swift.set_mode(0)
 
+        # set measured wrist servo scaling offset
+        self.__lower_servo_limit = 12.0
+        self.__higher_servo_limit = 168.0
+
+        # set sleep time to wait for servo to finish
+        self.__sleep_time = 1.0
+
         # initialize geometry helper
         self.__geometry_helper = GeometryHelper()
 
@@ -32,11 +38,8 @@ class RobotHandler:
         self.__y_uarm = 0
         self.__z_uarm = 0
         self.__wrist_angle = 0
-        # set values
+        # set values and move to predefined position (3, 8)
         self.reset()
-
-        # set sleep time to wait for servo to finish
-        self.__sleep_time = 1.0
 
     def disconnect(self):
         """
@@ -69,6 +72,12 @@ class RobotHandler:
         self.__wrist_angle = wrist_angle
 
         self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
+
+        # move to fix starting position
+        self.position_new([3, 8])
+        self.height_new([2])
+        self.__swift.flush_cmd()
 
     def position_new(self, position_user):
         """
@@ -86,16 +95,18 @@ class RobotHandler:
         wrist_angle_new = self.__geometry_helper.calculate_equal_wrist_rotation(self.__x_uarm, x_uarm_new,
                                                                                 self.__y_uarm, y_uarm_new,
                                                                                 self.__wrist_angle)
-
+        # correct for servo scaling
+        wrist_angle_corrected = self.__wrist_servo_correction(wrist_angle_new)
         # move arm
         self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
-        self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
+        self.__swift.set_wrist(angle=wrist_angle_corrected, wait=True)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
 
         # set new values
         self.__x_uarm = x_uarm_new
         self.__y_uarm = y_uarm_new
+        # set wrist angle to new, not to corrected because the correction is only for the motor
         self.__wrist_angle = wrist_angle_new
 
     def height_new(self, z_user_list):
@@ -162,3 +173,19 @@ class RobotHandler:
         self.__swift.set_pump(on=False)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
+
+    def __wrist_servo_correction(self, wrist_angle):
+        """
+        Correct wrist servo offset / scaling.
+        :param wrist_angle: geometrically calculated wrist angle
+        :type wrist_angle: float
+        :return: corrected / scaled wrist angle according to servo offset
+        :rtype: float
+        """
+        # linearly scaling angle to real wrist limits
+        real_wrist_angle =\
+            90.0 + (wrist_angle - 90.0) * (90 / ((self.__higher_servo_limit - self.__lower_servo_limit) / 2.0))
+        if 0.0 > real_wrist_angle > 180.0:
+            message = "Die gewünschte Position kann nicht erreicht werden, da der Greiffer nicht weiter gedreht werden kann."
+            raise RobotError(ErrorCode.E0002, message)
+        return real_wrist_angle
