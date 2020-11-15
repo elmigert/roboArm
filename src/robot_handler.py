@@ -8,7 +8,6 @@ import time
 
 from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
-from src.direction_kind import DirectionKind
 from src.geometry_helper import GeometryHelper
 from src.robot_error import ErrorCode, RobotError
 
