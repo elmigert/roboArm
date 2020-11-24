@@ -28,7 +28,7 @@ class RobotEditor(QWidget):
         self.__run_button = QPushButton('Start')
         self.__reset_button = QPushButton('Zurücksetzen')
         self.__challenge_choice = QComboBox()
-        # TODO: read list of challenges from UserChallenge, add more challenges
+        # TODO (ALR): Add more challenges.
         self.__challenge_choice.addItems(["Anfänger"])
 
         # second horizontal box
@@ -87,7 +87,7 @@ class RobotEditor(QWidget):
             success = user_script.run_script(self.__robot_handler)
             self.__output_console.setText("Skript wird ausgeführt.")
             if success:
-                # TODO (ALR): Add Magic Cube toggle here.
+                # TODO (ALR): Add Magic Cube Wifi toggle here.
                 self.__output_console.setText("Aufgabe erfolgreich ausgeführt. Super!")
             else:
                 self.__output_console.setText("Aufgabe noch nicht erfüllt, versuche es erneut.")

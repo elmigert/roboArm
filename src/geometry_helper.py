@@ -62,7 +62,7 @@ class GeometryHelper:
         y_uarm = (y_user + .5) * self.__edge_length + self.__y_offset
 
         # check if input is in range of robot
-        # TODO: This is not at all accurate, check if this is good enough.
+        # TODO (ALR): This is just a basic workspace restriction, add more if necessary.
         xy_length = numpy.sqrt(x_uarm ** 2 + y_uarm ** 2)
         xy_radius = abs(xy_length - self.__xy_base_offset)
         z_radius = abs(z_uarm - self.__z_base_offset)

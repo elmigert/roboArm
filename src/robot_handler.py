@@ -23,6 +23,7 @@ class RobotHandler:
         # set general mode: 0
         self.__swift.set_mode(0)
 
+        # TODO (ALR): Measure Servo offset again once uArm is installed.
         # set measured wrist servo scaling offset
         self.__lower_servo_limit = 12.0
         self.__higher_servo_limit = 168.0
@@ -127,37 +128,6 @@ class RobotHandler:
         # set values
         self.__z_uarm = z_uarm_new
 
-    # DEPRECATED
-    def rotate_gripper(self, direction):
-        """
-        Rotate gripper either 90° left or right, depending on direction.
-        :param direction: either left or right
-        :type direction: DirectionKind
-        """
-        if direction is DirectionKind.Left:
-            wrist_angle_new = self.__wrist_angle - 90.0
-        elif direction is DirectionKind.Right:
-            wrist_angle_new = self.__wrist_angle + 90.0
-        else:
-            raise NotImplementedError()
-
-        if not (0 <= wrist_angle_new <= 180):
-            message = "Der Greiffer kann nicht weiter in die gewünschte Richtung gedreht werden."
-            raise RobotError(ErrorCode.E0005, message)
-
-        # move robot
-        self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
-        self.__swift.flush_cmd()
-        # time.sleep(self.__sleep_time)
-
-        # set value
-        self.__wrist_angle = wrist_angle_new
-
-    # DEPRECATED
-    def set_wrist(self, angle):
-        self.__swift.set_wrist(angle=angle, wait=True)
-        self.__swift.flush_cmd()
-
     def pump_on(self):
         """
         Turn on the pump.
@@ -183,9 +153,9 @@ class RobotHandler:
         :rtype: float
         """
         # linearly scaling angle to real wrist limits
-        real_wrist_angle =\
-            90.0 + (wrist_angle - 90.0) * (90 / ((self.__higher_servo_limit - self.__lower_servo_limit) / 2.0))
-        if 0.0 > real_wrist_angle > 180.0:
-            message = "Die gewünschte Position kann nicht erreicht werden, da der Greiffer nicht weiter gedreht werden kann."
-            raise RobotError(ErrorCode.E0002, message)
-        return real_wrist_angle
+        if wrist_angle <= 90.0:
+            wrist_angle_corrected = (wrist_angle - self.__lower_servo_limit) * 90.0 / (90.0 - self.__lower_servo_limit)
+        else:
+            wrist_angle_corrected = 90.0 + 90.0 * (wrist_angle - 90) / (self.__higher_servo_limit - 90.0)
+
+        return wrist_angle_corrected

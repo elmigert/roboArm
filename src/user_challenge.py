@@ -41,9 +41,9 @@ class UserChallenge:
         :param start_coordinates: start position and height of robot in user frame [x, y, z]
         :type start_coordinates: list
         """
-        # TODO (ALR): Add objects for blocks.
+        # TODO (ALR): Add objects for blocks, this will work for now.
         # hard-coded start and end positions of blocks
-        self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[0, 0, 1], [2, 2, 1], [0, 15, 1], [2, 13, 1]],
+        self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[3, 4, 1], [5, 5, 1], [2, 12, 1], [5, 11, 1]],
                                                                                         BlockKind.Three: [[6, 6, 1]]},
                                                           ChallengeKind.EndPosition: {BlockKind.One: [[4, 6, 1], [4, 7, 1], [4, 9, 1], [4, 10, 1]],
                                                                                       BlockKind.Three: [[4, 8, 2]]}
