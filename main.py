@@ -5,6 +5,7 @@ This file contains the main file of the robot_arm project.
 """
 
 import sys
+import argparse
 
 from PyQt5.QtWidgets import QApplication
 
@@ -13,10 +14,28 @@ from src.robot_handler import RobotHandler
 from src.mock_robot_handler import MockRobotHandler
 
 
+
+
+
 def main():
     """
     Main function of robot_arm project.
     """
+    
+    
+    ''' --- Parser arguments to run the robot via console:
+        e.g. python main --sim True 
+            
+    
+    
+    '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sim", help="Turn on simulation instead of connecting to the robot. [True, False]", type=bool, default=False)
+    args = parser.parse_args()
+    
+
+
+     
     # --- try connecting to robot
     try:
         robot_handler = RobotHandler()
