@@ -13,12 +13,12 @@ class GeometryHelper:
     """
     This class offers some transformations and helper functions between the uArm frame and an simplified user frame.
     """
-    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=0, xy_base_offset=174, z_base_offset=93.5,
+    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=-10, xy_base_offset=174, z_base_offset=93.5,
                  min_radius_xy=120, max_radius_xy=340):
         """
         Constructor, defines basic values of user frame.
         :param edge_length: side length of unit cube in mm
-        :type edge_length: float
+        :type edge_length: floats
         :param x_offset: offset of user frame in x direction in mm
         :type x_offset: float
         :param y_offset: offset of user frame in y direction in mm
