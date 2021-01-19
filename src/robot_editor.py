@@ -28,8 +28,11 @@ class RobotEditor(QWidget):
         self.__run_button = QPushButton('Start')
         self.__reset_button = QPushButton('Zurücksetzen')
         self.__challenge_choice = QComboBox()
+        
         # TODO (ALR): Add more challenges.
-        self.__challenge_choice.addItems(["Anfänger"])
+        #self.__challenge_choice.addItems(["Anfänger"]) 
+        self.__challenge_choice.addItems(["Brücke 1"])
+        self.__challenge_choice.addItems(["Brücke 2"])
 
         # second horizontal box
         self.__text = QPlainTextEdit(self)

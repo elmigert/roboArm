@@ -13,6 +13,9 @@ class ChallengeKind(Enum):
     """
     Enum class to distinguish the challenge kinds.
     """
+    
+    BridgeOne = "Brücke 1"
+    BridgeTwo = "Brücke 2"
     Beginner = "Anfänger"
     Advanced = 1
     Pro = 3
@@ -47,16 +50,28 @@ class UserChallenge:
                                                                                         BlockKind.Three: [[6, 6, 1]]},
                                                           ChallengeKind.EndPosition: {BlockKind.One: [[4, 6, 1], [4, 7, 1], [4, 9, 1], [4, 10, 1]],
                                                                                       BlockKind.Three: [[4, 8, 2]]}
-                                                          }}
+                                                          },
+                                                          ChallengeKind.BridgeOne: {ChallengeKind.StartPosition: {BlockKind.One: [[4, 3, 1], [7, 6, 1], [2, 12, 1], [5, 11, 1]],
+                                                                        BlockKind.Three: [[6, 6, 1],[3,1,1]]},
+                                                          ChallengeKind.EndPosition: {BlockKind.One: [[4, 6, 1], [4, 7, 1], [4, 9, 1], [4, 10, 1]],
+                                                                                      BlockKind.Three: [[4, 8, 2]]}
+                                                          }
+                                                          }
         self.__challenge = challenge
         # check if challenge is not challenge kind
-        if type(challenge) is not ChallengeKind:
-            if challenge == ChallengeKind.Beginner.value:
-                self.__challenge = self.__all_challenges[ChallengeKind.Beginner]
-            else:
-                message = "Die ausgewählte Schwierigkeitsstufe wurde noch nicht implementiert, bitte wählen Sie eine " \
-                          "andere aus."
-                raise RobotError(ErrorCode.E0012, message)
+        
+        impl_challenges = [ ChallengeKind.Beginner.value,ChallengeKind.BridgeOne.value] #All challenges which are already implemented
+        if challenge in impl_challenges:
+            print('Challenge %s is implemented' %{challenge})
+            for item in ChallengeKind:
+                if item.value == challenge:
+                    self.__challenge = self.__all_challenges[item] 
+                    print('Challenge %s is added' %{challenge})              
+        else:
+            message = "Die Aufgabe  %s ist noch nicht implementiert' %{challenges} Bitte wählen Sie eine " \
+                      "andere aus."
+            raise RobotError(ErrorCode.E0012, message)
+           
 
         self.__coordinates = start_coordinates
         self.__block = BlockKind.Null

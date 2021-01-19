@@ -96,9 +96,10 @@ class RobotHandler:
         wrist_angle_new = self.__geometry_helper.calculate_equal_wrist_rotation(self.__x_uarm, x_uarm_new,
                                                                                 self.__y_uarm, y_uarm_new,
                                                                                 self.__wrist_angle)
-        # correct for servo scaling
+        # correct for shoehe(1)ervo scaling
         wrist_angle_corrected = self.__wrist_servo_correction(wrist_angle_new)
         # move arm
+        #z_uarm_new = self.__geometry_helper.transform_height_user_to_uarm(self.__z_uarm, x_uarm_new, y_uarm_new)
         self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
         self.__swift.set_wrist(angle=wrist_angle_corrected, wait=True)
         self.__swift.flush_cmd()
@@ -111,7 +112,7 @@ class RobotHandler:
         self.__wrist_angle = wrist_angle_new
 
     def height_new(self, z_user_list):
-        """
+        """x_uarm_new
         Move robot arm to z position in user frame.
         :param z_user_list: new height in user frame [z_user]
         :type z_user_list: list[int]
