@@ -11,5 +11,5 @@ cd ${directory}
 # source virtual environment
 source venv/bin/activate
 
-# execute main
-python3 main.py
+# execute main : Adds extra argument
+python3 main.py --sim True
