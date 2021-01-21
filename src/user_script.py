@@ -3,6 +3,7 @@
 """
 This file contains the UserScript class.
 """
+from src.user_functions import FunctionNames, UserFunction
 
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
@@ -74,6 +75,8 @@ class UserScript:
         :return: function string and corresponding argument list
         :rtype: dict[str, list]
         """
+        
+        
         # get arguments and functions
         argument_begin = line.find("(")
         argument_end = line.find(")")
@@ -81,11 +84,32 @@ class UserScript:
         if argument_begin == -1 or argument_end == -1:
             message = "Funktions Argumente müssen mit runden Klammern umgeben werden. Bsp.: position(1, 2) pumpe_an()"
             raise RobotError(ErrorCode.E0006, message)
+        elif len(line) -1 > argument_end :
+            message = "Funktions Argumente müssen mit Klammern enden und einzeln pro Zeile eingeben werden.  Bsp.: position(1, 2)"
+            raise RobotError(ErrorCode.E0006, message)
         function_string = line[:argument_begin]
         argument_string = line[argument_begin + 1:argument_end]
-        # TODO (ALR): Error check?
+        # TODO (ALR): Error check? (TE): Added int check and additional bracket end check
         if len(argument_string) > 0:
-            arguments = [int(i) for i in argument_string.split(",")]
+            try:
+                arguments = [int(i) for i in argument_string.split(",")]
+                for i in arguments:
+                    print(i,str(i).isdigit())
+                    if not str(i).isdigit():
+                        message = "Das eingegebene Argument {} ist keine positive, ganze Zahl".format(i)
+                        raise RobotError(ErrorCode.E0006,message)            
+            except:
+                for i in argument_string.split(","):
+                    try:
+                        int(i) 
+                    except:
+                        message = "Das eingegebene Argument {} ist keine gültige Zahl".format(i)
+                        raise RobotError(ErrorCode.E0006,message)
+                            
+          
+                    
+                
+               
         else:
             arguments = []
 

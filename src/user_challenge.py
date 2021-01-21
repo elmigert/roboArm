@@ -7,6 +7,7 @@ This file contains the UserChallenge class, which is used to monitor the success
 from enum import Enum
 
 from src.robot_error import ErrorCode, RobotError
+from src.debug import Debug
 
 
 class ChallengeKind(Enum):
@@ -44,7 +45,7 @@ class UserChallenge:
         :param start_coordinates: start position and height of robot in user frame [x, y, z]
         :type start_coordinates: list
         """
-        # TODO (ALR): Add objects for blocks, this will work for now.
+        # TODO (ALR): Add objects for blocks, this will work for now. (TE) : Probably use text file to load different Exercises?
         # hard-coded start and end positions of blocks
         self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[3, 4, 1], [5, 5, 1], [2, 12, 1], [5, 11, 1]],
                                                                                         BlockKind.Three: [[6, 6, 1]]},
@@ -53,23 +54,28 @@ class UserChallenge:
                                                           },
                                                           ChallengeKind.BridgeOne: {ChallengeKind.StartPosition: {BlockKind.One: [[4, 3, 1], [7, 6, 1], [2, 12, 1], [5, 11, 1]],
                                                                         BlockKind.Three: [[6, 6, 1],[3,1,1]]},
-                                                          ChallengeKind.EndPosition: {BlockKind.One: [[4, 6, 1], [4, 7, 1], [4, 9, 1], [4, 10, 1]],
-                                                                                      BlockKind.Three: [[4, 8, 2]]}
+                                                          ChallengeKind.EndPosition: {BlockKind.One: [[5, 6, 1], [5, 6, 2], [5, 8, 1], [5, 8, 2]],
+                                                                                      BlockKind.Three: [[5, 7, 3],[3,1,1]]}
+                                                          },
+                                                          ChallengeKind.BridgeTwo: {ChallengeKind.StartPosition: {BlockKind.One: [[5, 6, 1], [5, 8, 1], [5, 6, 2], [5, 8, 2]],
+                                                                        BlockKind.Three: [[5, 7, 3],[3,1,1],[6,6,1]]},
+                                                          ChallengeKind.EndPosition: {BlockKind.One: [[5, 6, 1], [5, 8, 1], [5, 5, 1], [5, 3, 1]],
+                                                                                      BlockKind.Three: [[5, 7, 2],[5,4,2]]}
                                                           }
                                                           }
         self.__challenge = challenge
         # check if challenge is not challenge kind
         
-        impl_challenges = [ ChallengeKind.Beginner.value,ChallengeKind.BridgeOne.value] #All challenges which are already implemented
+        #All challenges which are already implemented
+        impl_challenges = [ ChallengeKind.Beginner.value,ChallengeKind.BridgeOne.value,ChallengeKind.BridgeTwo.value] 
         if challenge in impl_challenges:
-            print('Challenge %s is implemented' %{challenge})
             for item in ChallengeKind:
                 if item.value == challenge:
                     self.__challenge = self.__all_challenges[item] 
-                    print('Challenge %s is added' %{challenge})              
+                    print('Challenge %s ist gestartet. Viel Erfolg beim Lösen.' %{challenge})              
         else:
-            message = "Die Aufgabe  %s ist noch nicht implementiert' %{challenges} Bitte wählen Sie eine " \
-                      "andere aus."
+            message = "Die Aufgabe  %s ist noch nicht implementiert.  Bitte wählen Sie eine   \
+                      andere aus."%{challenge}
             raise RobotError(ErrorCode.E0012, message)
            
 
@@ -107,18 +113,41 @@ class UserChallenge:
         elif function == robot.pump_off:
             # calculate coordinates below gripper
             coordinates = self.__coordinates.copy()
+            Debug.msg('Der Block wird auf der Koordinate {} abgelegt'.format(coordinates[:]))
+            #Block coordinate below placed block
             coordinates[2] -= 1
+  
             # check if a block is held, and there is either ground or another block below
-            # TODO (ALR): We don't check if the block is dropped from the air here, might need to add check.
-            if self.__block is BlockKind.One:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.One].append(self.__coordinates.copy())
-            elif self.__block is BlockKind.Three:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].append(self.__coordinates.copy())
+            valid_pos = False
+            if coordinates[2] == 0:
+               Debug.msg("Block wurde auf den Boden gelegt")
+               valid_pos = True
+            elif coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
+               Debug.msg("Block wurde auf einen kleinen Block gelegt")
+               valid_pos = True
             else:
-                message = "Die Pumpe kann nur deaktiviert werden, um einen Block auf das Feld oder einen anderen Block" \
-                          "abzulegen."
-                raise RobotError(ErrorCode.E0014, message)
-            self.__block = BlockKind.Null
+                for i in range(-1,2,1):
+                    # Note: Only one rotation is implemented yet as Three type block has the same rotation in all challenges
+                    if [coordinates[0],coordinates[1]+i,coordinates[2]] in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
+                            Debug.msg("Block wurde auf einen grossen Block gelegt")
+                            valid_pos = True
+            if valid_pos:
+                if self.__block is BlockKind.One:
+                    self.__challenge[ChallengeKind.StartPosition][BlockKind.One].append(self.__coordinates.copy())
+                elif self.__block is BlockKind.Three:
+                    self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].append(self.__coordinates.copy())
+                else:
+                    message = "Der Robotor trägt momentan keinen oder keinen bekannten Block"
+                    raise RobotError(ErrorCode.E0014, message)
+                self.__block = BlockKind.Null
+                Debug.msg('Blocks auf Koordinaten: Klein ({}): {} \
+                      , Gross  ({}): {} '.format(len(self.__challenge[ChallengeKind.StartPosition][BlockKind.One]),self.__challenge[ChallengeKind.StartPosition][BlockKind.One][:],
+                      len(self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]),self.__challenge[ChallengeKind.StartPosition][BlockKind.Three][:]))
+            else:
+                message = "Der Block kann nicht in der Luft losgelassen werden."
+                Debug.error(message)
+                raise RobotError(ErrorCode.E0015, message)
+                    
         else:
             raise NotImplementedError()
 
@@ -134,7 +163,29 @@ class UserChallenge:
         end_set_b1 = set()
         end_set_b3 = set()
 
-        # change nested lists to sets of tuples to easily compare them
+        #Only check whether the required end position are reached (new version : TE)
+        final_positions_one = self.__challenge[ChallengeKind.EndPosition][BlockKind.One]
+        final_positions_three = self.__challenge[ChallengeKind.EndPosition][BlockKind.Three]
+        for position in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:      
+             is_final = False
+             if position in final_positions_one:
+                 final_positions_one.remove(position)
+                 is_final = True
+             Debug.msg("Position {} is in endposition: {}"
+                       .format(position,is_final))
+        for position in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
+             is_final = False
+             if position in final_positions_three:
+                 final_positions_three.remove(position)
+                 is_final = True
+             Debug.msg("Position {} is in endposition: {}"
+                       .format(position,is_final))
+        Debug.msg("Fehlende kleine Blöcke: {}".format(len(final_positions_one)))
+        Debug.msg("Fehlende grosse Blöcke: {}".format(len(final_positions_three)))
+        
+        
+        
+        # change nested lists to sets of tuples to easily compare them (old version)
         [current_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]]
         [current_set_b3.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]]
         [end_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.EndPosition][BlockKind.One]]
@@ -143,6 +194,6 @@ class UserChallenge:
         d_1 = current_set_b1 - end_set_b1
         d_3 = current_set_b3 - end_set_b3
 
-        if len(d_1) == 0 and len(d_3) == 0:
+        if (len(d_1) == 0 and len(d_3) == 0) or (len(final_positions_one) == 0 and len(final_positions_three) == 0):  #First part before or is of old function and can be removed
             return True
         return False
