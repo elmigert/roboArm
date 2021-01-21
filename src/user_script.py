@@ -3,7 +3,7 @@
 """
 This file contains the UserScript class.
 """
-from src.user_functions import FunctionNames, UserFunction
+from src.user_functions import FunctionNames
 
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
@@ -34,37 +34,22 @@ class UserScript:
         line_list = [i for i in input_string.split("\n") if i != ""]
 
         self.__function_calls = list()
-        # TODO (ALR): Refactor into different functions.
+        # TODO (ALR): Refactor into different functions. (TE): Done: Added functions for each function_string
         # map each string to function and argument
         for line in line_list:
             clean_data = UserScript.__cleanup_line(line)
             function_string = clean_data["function_string"]
             arguments = clean_data["arguments"]
+            
+            if function_string == FunctionNames.hoehe.name:
+                self.hoehe(robot_handler,arguments)
+            elif function_string == FunctionNames.position.name:
+                self.position(robot_handler,arguments)
+            elif function_string == FunctionNames.pumpe_an.name:
+                self.pumpe_an(robot_handler,arguments)
+            elif function_string == FunctionNames.pumpe_aus.name:
+                self.pumpe_aus(robot_handler,arguments)
 
-            # generate function mapping
-            if function_string == "position":
-                if len(arguments) != 2:
-                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position(5, 5)"
-                    raise RobotError(ErrorCode.E0007, message)
-                self.__function_calls.append({"function": robot_handler.position_new, "args": arguments})
-            elif function_string == "hoehe":
-                if len(arguments) != 1:
-                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
-                    raise RobotError(ErrorCode.E0008, message)
-                self.__function_calls.append({"function": robot_handler.height_new, "args": arguments})
-            elif function_string == "pumpe_an":
-                if len(arguments) != 0:
-                    message = "Die Funktion pumpe_an benötigt kein Argument. Bsp.: pumpe_an()"
-                    raise RobotError(ErrorCode.E0009, message)
-                self.__function_calls.append({"function": robot_handler.pump_on, "args": arguments})
-            elif function_string == "pumpe_aus":
-                if len(arguments) != 0:
-                    message = "Die Funktion pumpe_aus benötigt kein Argument. Bsp.: pumpe_aus()"
-                    raise RobotError(ErrorCode.E0010, message)
-                self.__function_calls.append({"function": robot_handler.pump_off, "args": arguments})
-            else:
-                message = "Die angegebene function: \"" + function_string + "\" ist nicht bekannt."
-                raise RobotError(ErrorCode.E0011, message)
 
     @staticmethod
     def __cleanup_line(line):
@@ -94,7 +79,6 @@ class UserScript:
             try:
                 arguments = [int(i) for i in argument_string.split(",")]
                 for i in arguments:
-                    print(i,str(i).isdigit())
                     if not str(i).isdigit():
                         message = "Das eingegebene Argument {} ist keine positive, ganze Zahl".format(i)
                         raise RobotError(ErrorCode.E0006,message)            
@@ -142,3 +126,29 @@ class UserScript:
         :type robot_handler: RobotHandler
         """
         robot_handler.reset()
+        
+
+    def hoehe(self,robot_handler, arguments):
+        if len(arguments) != 1:
+                    message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
+                    raise RobotError(ErrorCode.E0008, message)
+        self.__function_calls.append( {"function": robot_handler.height_new, "args": arguments})
+
+
+    def position(self,robot_handler,arguments):
+        if len(arguments) != 2:
+                    message = "Bitte geben Sie zwei Koordinaten für eine neue Position an. Bsp.: position(5, 5)"
+                    raise RobotError(ErrorCode.E0007, message)
+        self.__function_calls.append({"function": robot_handler.position_new, "args": arguments})
+  
+    def pumpe_an(self,robot_handler,arguments):
+        if len(arguments) != 0:
+                    message = "Die Funktion pumpe_an benötigt kein Argument. Bsp.: pumpe_an()"
+                    raise RobotError(ErrorCode.E0009, message)
+        self.__function_calls.append({"function": robot_handler.pump_on, "args": arguments})
+
+    def pumpe_aus(self,robot_handler,arguments):
+        if len(arguments) != 0:
+                    message = "Die Funktion pumpe_aus benötigt kein Argument. Bsp.: pumpe_aus()"
+                    raise RobotError(ErrorCode.E0010, message)
+        self.__function_calls.append({"function": robot_handler.pump_off, "args": arguments})

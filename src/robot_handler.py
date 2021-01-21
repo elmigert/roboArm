@@ -10,6 +10,7 @@ from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
 from src.geometry_helper import GeometryHelper
 from src.robot_error import ErrorCode, RobotError
+from src.user_challenge import UserChallenge
 
 
 class RobotHandler:

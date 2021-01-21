@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, Q
 
 from src.robot_error import RobotError
 from src.user_script import UserScript
+from src.user_challenge import UserChallenge
 
 
 class RobotEditor(QWidget):
@@ -31,8 +32,8 @@ class RobotEditor(QWidget):
         
         # TODO (ALR): Add more challenges.
         #self.__challenge_choice.addItems(["Anfänger"]) 
-        self.__challenge_choice.addItems(["Brücke 1"])
-        self.__challenge_choice.addItems(["Brücke 2"])
+        for challenge in self.add_challenges():
+            self.__challenge_choice.addItems([challenge])
 
         # second horizontal box
         self.__text = QPlainTextEdit(self)
@@ -119,3 +120,6 @@ class RobotEditor(QWidget):
         :type text: str
         """
         self.__output_console.setText(text)
+    def add_challenges(self):
+        challenges,_ = UserChallenge.challenge_name_path()
+        return challenges

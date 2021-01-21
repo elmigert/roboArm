@@ -3,6 +3,14 @@
 """
 This file contains the UserChallenge class, which is used to monitor the success of a challenge.
 """
+from pathlib import Path
+import os
+try:
+    import configparser
+except:
+    from six.moves import configparser
+    
+
 
 from enum import Enum
 
@@ -12,7 +20,8 @@ from src.debug import Debug
 
 class ChallengeKind(Enum):
     """
-    Enum class to distinguish the challenge kinds.
+    OLD: WIll be removed
+    Enum class to distinguish the challenge kinds. Is used to save all position of blocks and manipulation of states. Probably be removed in later stage
     """
     
     BridgeOne = "Brücke 1"
@@ -22,17 +31,126 @@ class ChallengeKind(Enum):
     Pro = 3
     StartPosition = 4
     EndPosition = 5
+    
+    
 
+class Challenge:
+    
+    blocks = []
+    final_pos = []
+    block_types = []
+    def __init__(self,_name):        
+        self.name = _name
+        
+    def add_start_position(self,block):
+        # Adds a block to the start position
+        # @block: type: Block
+        self.blocks.append(block)   
+        
+    def add_final_position(self,block):
+        # Adds a block to the final position
+        # @block: type: Block
+        self.final_pos.append(block)
+        
+    def add_block_type(self,_block_type):
+        # Adds a block type with dimension 
+        # @_block_type: type: BlockType, holds dimension(x,y) and type (str)
+        self.block_types.append(_block_type)
 
-class BlockKind(Enum):
+    def valid_block_type(self,_block_type_str):
+        # Returns true, if block_type_str exists
+        #@_block_type_str: str
+        types = [kinds.type.lower() for kinds in self.block_types]
+        return _block_type_str.lower() in types
+        
+        
+        
+    def final_position_reached(self):
+        # Checks, whether all required blocks are in the final position.
+        pass
+    
+    def debug_function(self):
+        
+        print("Debug function for challenge ",self.name)
+        for i in self.blocks:
+            print("blocks",i.pos,i.type)
+        for i in self.final_pos:
+            print("final pos",i.pos,i.type)
+        for i in self.block_types:
+            print("types",i.type,"dim",i.dimension)
+
+        
+        
+        
+        
+    
+
+class BlockKind(Enum): 
     """
-    Enum class to distinguish block kinds.
+    Enum class to distinguish block kinds. OLD
     """
     Null = 0
     One = 1
     Three = 2  # assume direction of 1x3x1 block only in y direction
 
+class BlockType:
+    '''
+    Different block types and dimensions, NEW: Replaces BlockKind
+    '''
+    def __init__(self,_type,_dimension):
+        '''@Param: 
+           type: str, type of the block (name of the type)
+            dimension: dimension of the block in [length x,length y] with zero rotation    
+        '''
+        self.type = _type
+        self.dimension = _dimension
+class Block:
+    coordinate = [None,None,None]
+    
+   
 
+    def __init__(self,_coordinate,_type,_rotation=None):
+        '''
+        @Param
+            _coordinate: current positino of the block
+            _BlockKind: type of the block
+            _rotation: current rotation : Not implemented yet
+        
+        
+        '''
+        self.coordinate = _coordinate
+        self.type = _type
+        self.rotation =_rotation
+    
+    
+    @property
+    def x(self):
+         if self.coordinate[0] == None:
+             Debug.error("Coordinate x not set yet")
+             return False
+         else:
+             return self.coordinate[0]
+    @property
+    def y(self):
+         if self.coordinate[1] == None:
+             Debug.error("Coordinate x not set yet")
+             return False
+         else:
+             return self.coordinate[1]
+         
+    @property     
+    def z(self):
+         if self.coordinate[2] == None:
+             Debug.error("Coordinate x not set yet")
+             return False
+         else:
+             return self.coordinate[2]
+    
+    @property     
+    def pos(self):
+        return self.coordinate
+         
+            
 class UserChallenge:
     """
     This class monitors user challenge success.
@@ -45,6 +163,11 @@ class UserChallenge:
         :param start_coordinates: start position and height of robot in user frame [x, y, z]
         :type start_coordinates: list
         """
+        
+
+        #Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.
+        self.__all_challenges = []       
+        self.load_challenges()
         # TODO (ALR): Add objects for blocks, this will work for now. (TE) : Probably use text file to load different Exercises?
         # hard-coded start and end positions of blocks
         self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[3, 4, 1], [5, 5, 1], [2, 12, 1], [5, 11, 1]],
@@ -81,6 +204,87 @@ class UserChallenge:
 
         self.__coordinates = start_coordinates
         self.__block = BlockKind.Null
+    @staticmethod  
+    def challenge_name_path():
+        parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
+        path = os.path.join(parent_path,"challenges/challenges_init")
+        path_challenges = []
+        file_ending = 'ini'
+        parser = configparser.ConfigParser()
+        challenge_names = []
+        for file in os.listdir(path):
+            if file.endswith(file_ending):
+                path_challenge = os.path.join(path,file)
+                path_challenges.append(path_challenge)
+                parser.read(path_challenge)
+                if parser['CONFIG']['filetype'] == "challenge":
+                    challenge_names.append(parser['challenge']['name'])
+                else:
+                    Debug.error(path_challenge, ' is no valid challenge file. The file is not loaded. Please add challenge to the name in the challenge section.')
+        
+        return [challenge_names,path_challenges]
+ 
+        
+    def load_challenges(self):
+
+        _,challenge_paths = self.challenge_name_path()
+        parser = configparser.ConfigParser()
+        for path in challenge_paths:
+            parser.read(path)
+            
+            # Generate a challenge template
+            challenge = Challenge(parser['challenge']['name'])
+
+            
+            # Load block types : Not used
+            block_types = parser['challenge']['block_types']
+            block_types= block_types.replace('[','')
+            block_types= block_types.replace(']','')
+            block_types = block_types.split(",")
+            block_types = [i.lower() for i in block_types]
+            
+            # Load block dimensions
+            for block_type in parser['Block_Dimensions']:
+                dim = parser['Block_Dimensions'][block_type]
+                dim = dim.replace('[','')
+                dim = dim.replace(']','')
+                dim = dim.split(',')
+                block_type = block_type.lower()
+                if block_type in block_types:
+                    challenge.add_block_type(BlockType(block_type,dim))
+                else:
+                    Debug.error("There is no block type {} (see [Block_Dimensions] in {})".format(block_type,path))
+                
+
+
+            
+            # Load start positions
+            for key in parser['Start_Position']:
+                start_pos = parser['Start_Position'][key]
+                start_pos= start_pos.replace('[','')
+                start_pos = start_pos.replace(']','')
+                start_pos = start_pos.split(",")
+                # ToDo: Check i
+                if challenge.valid_block_type(start_pos[3]):
+                    challenge.add_start_position(Block(start_pos[:3],start_pos[3].lower()))
+                else:
+                    Debug.error("invalid key of start block: {}".format(start_pos[3] ))
+                
+                
+            # Load final positions
+            for key in parser['Final_Position']:
+                final_pos = parser['Final_Position'][key]
+                final_pos= final_pos.replace('[','')
+                final_pos = final_pos.replace(']','')
+                final_pos = final_pos.split(",")
+                challenge.add_final_position(Block(final_pos[:3],final_pos[3].lower()))
+            
+            challenge.debug_function()
+            #Add the new challenge to the class
+            self.__all_challenges.append(challenge)
+                
+
+        
 
     def record_robot(self, robot, function, args):
         """
@@ -111,10 +315,10 @@ class UserChallenge:
                 message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
                 raise RobotError(ErrorCode.E0013, message)
         elif function == robot.pump_off:
-            # calculate coordinates below gripper
+            # Calculate coordinates below gripper
             coordinates = self.__coordinates.copy()
             Debug.msg('Der Block wird auf der Koordinate {} abgelegt'.format(coordinates[:]))
-            #Block coordinate below placed block
+            # Block coordinate below placed block
             coordinates[2] -= 1
   
             # check if a block is held, and there is either ground or another block below
@@ -158,12 +362,8 @@ class UserChallenge:
         :return: True if end and current position of all blocks is equal
         :rtype: bool
         """
-        current_set_b1 = set()
-        current_set_b3 = set()
-        end_set_b1 = set()
-        end_set_b3 = set()
 
-        #Only check whether the required end position are reached (new version : TE)
+        # Only check whether the required end position are reached (new version : TE)
         final_positions_one = self.__challenge[ChallengeKind.EndPosition][BlockKind.One]
         final_positions_three = self.__challenge[ChallengeKind.EndPosition][BlockKind.Three]
         for position in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:      
@@ -185,15 +385,9 @@ class UserChallenge:
         
         
         
-        # change nested lists to sets of tuples to easily compare them (old version)
-        [current_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]]
-        [current_set_b3.add(tuple(element)) for element in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]]
-        [end_set_b1.add(tuple(element)) for element in self.__challenge[ChallengeKind.EndPosition][BlockKind.One]]
-        [end_set_b3.add(tuple(element)) for element in self.__challenge[ChallengeKind.EndPosition][BlockKind.Three]]
 
-        d_1 = current_set_b1 - end_set_b1
-        d_3 = current_set_b3 - end_set_b3
 
-        if (len(d_1) == 0 and len(d_3) == 0) or (len(final_positions_one) == 0 and len(final_positions_three) == 0):  #First part before or is of old function and can be removed
+        if (len(final_positions_one) == 0 and len(final_positions_three) == 0):  #First part before or is of old function and can be removed
             return True
         return False
+

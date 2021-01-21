@@ -51,4 +51,5 @@ class ErrorCode(Enum):
     E0013 = 13  # UserChallenge
     E0014 = 14  # UserChallenge
     E0015 = 15  # UserChallenge: Block in Air
+
     

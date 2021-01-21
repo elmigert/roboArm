@@ -13,3 +13,5 @@ numpy==1.16.4
 
 # Qt Frontend requirements
 PyQt5==5.13.2
+
+# Standrad libraries: os, configparser, pathlib
