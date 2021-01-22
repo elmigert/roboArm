@@ -36,21 +36,28 @@ class ChallengeKind(Enum):
 
 class Challenge:
     
+
     blocks = []
+    start_pos = []
     final_pos = []
     block_types = []
+    
+
     def __init__(self,_name):        
         self.name = _name
         
     def add_start_position(self,block):
         # Adds a block to the start position
         # @block: type: Block
-        self.blocks.append(block)   
-        
+        if not bool(self.start_pos):
+            self.blocks.append(block)   
+            self.start_pos.append(block)
+
     def add_final_position(self,block):
         # Adds a block to the final position
         # @block: type: Block
-        self.final_pos.append(block)
+        if not bool(self.final_pos):
+            self.final_pos.append(block)
         
     def add_block_type(self,_block_type):
         # Adds a block type with dimension 
@@ -68,6 +75,11 @@ class Challenge:
     def final_position_reached(self):
         # Checks, whether all required blocks are in the final position.
         pass
+    def reset(self):
+        self.blocks = self.start_pos
+
+            
+        
     
     def debug_function(self):
         
@@ -169,6 +181,8 @@ class UserChallenge:
         self.__all_challenges = []       
         self.load_challenges()
         # TODO (ALR): Add objects for blocks, this will work for now. (TE) : Probably use text file to load different Exercises?
+        
+        # Old: Delete, as soon as the new code is done
         # hard-coded start and end positions of blocks
         self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[3, 4, 1], [5, 5, 1], [2, 12, 1], [5, 11, 1]],
                                                                                         BlockKind.Three: [[6, 6, 1]]},
@@ -188,7 +202,23 @@ class UserChallenge:
                                                           }
         self.__challenge = challenge
         # check if challenge is not challenge kind
+        # NEW
+        challengeL_loaded = False
+        for chal in self.__all_challenges[]:
+            if chal.name == challenge:
+                 self.__challenge = chal
+                 print('Challenge %s ist gestartet. Viel Erfolg beim Lösen.' %{challenge})
+                 challenge_loaded = True
+                 break
+        if not challenge_loaded:
+            message = "Die Aufgabe  %s kann nicht geladen werden.  Bitte wählen Sie eine   \
+                      andere aus."%{challenge}
+            raise RobotError(ErrorCode.E0012, message)            
+                 
         
+        
+        
+        # OLD
         #All challenges which are already implemented
         impl_challenges = [ ChallengeKind.Beginner.value,ChallengeKind.BridgeOne.value,ChallengeKind.BridgeTwo.value] 
         if challenge in impl_challenges:
@@ -305,6 +335,12 @@ class UserChallenge:
         elif function == robot.pump_on:
             # we can change the coordinates in start challenge here, since it is reinitialized every time a script is
             # run
+            
+            
+            #New code for the challenge: Update block
+            
+            
+            
             if self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
                 self.__challenge[ChallengeKind.StartPosition][BlockKind.One].remove(self.__coordinates)
                 self.__block = BlockKind.One
