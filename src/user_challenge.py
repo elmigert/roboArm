@@ -36,19 +36,17 @@ class ChallengeKind(Enum):
     
 
 class Challenge:
-    
 
-
-    
 
     def __init__(self,_name):  
         self.blocks = []
-        self.start_pos = []
-        self.final_pos = []
-        self.block_types = []
+        self.start_pos = [] # Type: block, the start position of the blocks
+        self.final_pos = [] # Type: block, the goal position of the blocks required to achieve
+        self.block_types = [] # @_block_type: type: BlockType, holds dimension(x,y) and type (str)
     
         self.init = [False,False,False] # Initialized [start_pos,final_pos,block_types]
         self.name = _name
+        self.block_manipulating = None
         
     def add_start_position(self,block):
         # Adds a block to the start position
@@ -59,7 +57,7 @@ class Challenge:
             
 
     def add_final_position(self,block):
-        # Adds a block to the final position
+        # Adds a block to the final position : 
         # @block: type: Block
         if not self.init[1]:
             self.final_pos.append(block)
@@ -76,7 +74,13 @@ class Challenge:
         #@_block_type_str: str
         types = [kinds.type.lower() for kinds in self.block_types]
         return _block_type_str.lower() in types
-        
+    
+    def get_dim(self,block_type):
+        # Gets dimension of the block_type (string). returns false if there is no dimensions available for the blocktype   
+        for types in self.block_types:
+            if block_type.lower() == types.type.lower():
+                return types.dimension
+        return [1,1]
         
         
     def final_position_reached(self):
@@ -88,25 +92,109 @@ class Challenge:
     
     def pump_on(self,coordinates):
         # Checks, whether a block is below the pump 
-        return self.isBlock([coordinates[:2],coordinates[2]-1]) 
+        if self.getBlock(coordinates):
+            # Everything is fine
+            return True
+        else:
+            message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
+            raise RobotError(ErrorCode.E0013, message)
+            
     
     def pump_off(self,coordinates):
-        # Checks, whether a block is below the placed block 
-        return self.isBlock([coordinates[:2],coordinates[2]-1]) 
+        # Checks whether the block can be placed on the coordinates       
+        if self.block_manipulating:
+            if self.placeBlock(coordinates):
+                # THe block could be succesfully places
+                return True
+            else:
+                # ToDo: The pump should be stopped here or somewhere else
+                return False
+        else:
+            message = "Der Robotor trägt momentan keinen oder keinen bekannten Block"
+            raise RobotError(ErrorCode.E0014, message)
+
         
         
     def isBlock(self,coordinates):
+        #Checks if there is a block at coordinates
+        check = False
+        if coordinates[2] >= 0:
+            Debug.msg('Is block on coordinate check: {}'.format(coordinates[:]))
+            for block in self.blocks:
+                if block.is_on_position(coordinates):
+                    Debug.msg('Block found on {}'.format(coordinates))
+                    check = True
+                    break 
+            return check
+        else:
+            return False
+    
+    def getBlock(self,coordinates):
         #CHecks if there is a block at coordinates
         check = False
-        print('is coordinate block check: {}'.format(coordinates[:]))
-        for block in self.blocks:
-            if block.is_on_position([coordinates[:2],coordinates[2]-1]):
-                print('There is a block below')
-                check = True
-                break
         
+        Debug.msg('Get block at: {}'.format(coordinates[:]))
+        if coordinates[2] == 0:
+            Debug.msg("There is only the floor there ")
+            return False
+        print('Number of blocks: {}'.format(len(self.blocks)))
+        for i in range(len(self.blocks)):
+            
+            if self.blocks[i].is_on_position(coordinates):
+                Debug.msg('We got a block!')
+                self.block_manipulating = self.blocks[i]
+                self.block_manipulating.getBlock(coordinates)
+                del self.blocks[i]
+                return True
+        Debug.msg('We dont got a block!')
         return check 
-        
+    
+    def placeBlock(self,coordinates):
+        # Checks whether the block can be placed
+        check = False
+        bottom_coordinates = coordinates.copy()
+        bottom_coordinates[2] -= 1
+        if self.isBlock(coordinates):
+            message = 'There is already a block there'
+            Debug.msg(message)
+            Debug.error(message)
+            raise RobotError(ErrorCode.E0015, message)
+            return False
+        elif coordinates[2] == 1:
+            Debug.msg("The block is placed on the floor")
+            self.block_manipulating.placeBlock(coordinates)
+            self.blocks.append(self.block_manipulating)
+            self.block_manipulating = []
+            return True
+        elif self.isBlock(bottom_coordinates):
+            Debug.msg("The block is placed on another block")
+            self.block_manipulating.placeBlock(coordinates)
+            self.blocks.append(self.block_manipulating)
+            self.block_manipulating = []
+            return True 
+        else:
+            # Implement method for bridge block
+            test_block = self.block_manipulating # Used to test whether the block can be placed on two points
+            test_block.placeBlock(bottom_coordinates)
+            possible_coordinates = test_block.get_positions
+            print('Possible coordinates {}'.format(possible_coordinates))
+            blocks_below = 0
+            for cord in possible_coordinates:
+                print('Coordinates to check : {}'.format(cord))
+                if self.isBlock(cord):
+                    blocks_below +=1
+                    Debug.msg('There is a block below but not in the center')
+            if blocks_below >= 2:
+                Debug.msg("The block is placed on multiple other blocks")
+                self.block_manipulating.placeBlock(coordinates)
+                self.blocks.append(self.block_manipulating)
+                self.block_manipulating = []
+                return True  
+            else:
+                message = "Der Block kann nicht in der Luft losgelassen werden. Platziere den Block auf dem Boden oder auf einem anderen Block"
+                Debug.error(message)
+                raise RobotError(ErrorCode.E0015, message)
+        return check 
     
     def debug_function(self):
         
@@ -119,13 +207,19 @@ class Challenge:
             print("types",i.type,"dim",i.dimension)
     
     def success(self):
-        #Checks, whether each of the final position is reached 
+        # Checks, whether each of the final position is reached 
         # Note: The wrong rotation is not checked yet
         blocks_total = len(self.final_pos)
         blocks_in_final = 0
-        for block_goal in self.final_pos:
+        self.debug_function()
+        for block_goal in self.final_pos:           
             for block_current in self.blocks:
-                if block
+                if block_current.is_same(block_goal.pos):
+                    blocks_in_final = blocks_in_final + 1
+        print (' Block in final: {} of {}'.format(blocks_in_final,blocks_total))
+        return blocks_in_final == blocks_total
+
+            
                 
 
         
@@ -153,12 +247,10 @@ class BlockType:
         '''
         self.type = _type
         self.dimension = _dimension
-class Block:
-    coordinate = [None,None,None]
     
-   
 
-    def __init__(self,_coordinate,_type,_dimension=None,_rotation=0):
+class Block:
+    def __init__(self,_coordinate,_type,_dimension=[1,1],_rotation=0):
         '''
         @Param
             _coordinate: current center positino of the block (should also work for even blocks)
@@ -168,32 +260,52 @@ class Block:
             _rotation: current rotation: 0: the block is the same as the dimension. Any other number: rotated by this degree anticlockwise
             _dimension: Dimension of the block              
         '''
-        
-        self.center = _coordinate
+
+        self.pos_center =_coordinate
 
         self.type = _type
         self.rotation =_rotation
         self.dimension = _dimension
         
         # Note that this code needs to be adjusted if the width is more than 1 block!
-        update_coordinates(self)
+        self.update_coordinates()
 
     def update_coordinates(self):
+        #print('origin: {} dim[0]: {}, range(x_b {}'.format(self.pos, self.dimension[0],range(self.dimension[0])))
         if self.dimension:
-            self.coordinates = []
-            
+            self.coordinates = []   
             for x_b in range(self.dimension[0]):
                 for y_b in range(self.dimension[1]):
                     x = x_b - (self.dimension[0]-1)/2
-                    y = y_b - (self.dimension[0]-1)/2
+                    y = y_b - (self.dimension[1]-1)/2
                     r = math.sqrt(x**2 + y**2)
-                    angle = atan2(y,x)
+                    angle = math.atan2(y,x)
                     angle = math.radians(self.rotation) + angle
-                    self.coordinates.append([round(self.center[0]+ r*math.cos(angle),1),round(self.center[1] + r*math.sin(angle),1)])
+                    #Debug.msg('x {},y{},r{},angle{}'.format(x,y,r,angle))
+                    self.coordinates.append([int(round(self.pos_center[0]+ r*math.cos(angle),1)),int(round(self.pos_center[1] + r*math.sin(angle),1)),int(self.pos_center[2])])
         else:
-            self.coordinates = self.center       
+            self.coordinates =  [self.pos_center]       
         Debug.msg('Transformed  coordinates: {}'.format(self.coordinates[:]))
     
+    
+    def getBlock(self,coordinate):
+        # Sets the hold position in relation to the center
+        self.hold_position = []
+        for i in range(len(coordinate)):
+           self.hold_position.append( round(coordinate[i]-self.pos_center[i],1))
+        self.hold_angle = self.rotation
+    
+    def placeBlock(self,coordinate):
+        # Updates the coordinates after the placement of the block
+        r = math.sqrt(self.hold_position[0]**2 + self.hold_position[1]**2)
+        angle_dif = math.atan2(self.hold_position[1],self.hold_position[0])
+        angle_change = self.rotation-self.hold_angle
+        angle = angle_dif + angle_change
+        self.pos_center = [round(coordinate[0] +r*math.cos(angle),1),round(coordinate[1] +r*math.sin(angle),1),coordinate[2] ]
+        print('Block placed at {}'.format(self.pos_center[:]))
+        self.update_coordinates()
+        
+        
     
     def rotation(self,angle):
         # Rotates the block by angle (degree) anticlockwise around the center (self.center)
@@ -203,53 +315,66 @@ class Block:
         
     @property
     def x(self):
-         if self.center[0] == None:
+         if self.pos_center[0] == None:
              Debug.error("Coordinate x not set yet")
              return False
          else:
-             return self.center[0]
+             return self.pos_center[0]
     @property
     def y(self):
-         if self.center[1] == None:
+         if self.pos_center[1] == None:
              Debug.error("Coordinate x not set yet")
              return False
          else:
-             return self.centere[1]
+             return self.pos_center[1]
          
     @property     
     def z(self):
-         if self.center[2] == None:
+         if self.pos_center[2] == None:
              Debug.error("Coordinate x not set yet")
              return False
          else:
-             return self.center[2]
+             return self.pos_center[2]
     
     
     def is_on_position(self,position):
         # Returns true, if a block occupies the position and false othe
         p_a= self.coordinates[0]
         p_b = self.coordinates[-1]
-        if ((p_a[0] < position[0] and  position[0]  < p_b[0]) or (p_a[0] > position[0] and  position[0]  > p_b[0]))
-            and ((p_a[1] < position[1] and  position[1]  < p_b[1]) or(p_a[1] < position[1] and  position[1]  < p_b[1])):
-                return True
-        else:
-            
-            return Falsegit 
+        print('p_a {}, p_b {} position {}'.format(p_a,p_b,position))
+        check = [False,False,False]
+        for i in range(3):
+            check[i] = (p_a[i] <= position[i] and position[i]  <= p_b[i]) or (p_a[i] >= position[i] and position[i]  >= p_b[i])
+            if  not check[i]:
+                return False
+        return True
+
     def is_same(self,position,angle=0):
         # Returns true, if the block occupies the position and false otherwise
-        if position == self.center and self.rotation= angle or 
-        return position in self.coordinates
+        angle = round(angle)
+        while angle > 180:
+            angle = angle - 180
+        tmp_rot = round(self.rotation)
+        while tmp_rot > 180:
+            tmp_rot = round(tmp_rot - 180)  
+        #print('position block {}, position goal {}, angle block {}, angle goal {}'.format(self.pos_center,position,tmp_rot,angle))
+        if position == self.pos_center and tmp_rot == angle:
+            return True
 
             
     @property     
-    def center(self):
+    def pos(self):
         # Returns the center of the block
-        return self.center
+        return self.pos_center
+    @property
+    def get_positions(self):
+        # Returns all occupied coordinates (one tile space between the coordinates)
+        return self.coordinates
          
             
 class UserChallenge:
     """
-    This class monitors user challenge success.
+    This class monitors user challenge success.g
     """
     def __init__(self, challenge, start_coordinates):
         """
@@ -263,27 +388,7 @@ class UserChallenge:
 
         #Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.
 
-        # TODO (ALR): Add objects for blocks, this will work for now. (TE) : Probably use text file to load different Exercises?
-        
-        # Old: Delete, as soon as the new code is done
-        # hard-coded start and end positions of blocks
-        '''self.__all_challenges = []       
-        self.__all_challenges = {ChallengeKind.Beginner: {ChallengeKind.StartPosition: {BlockKind.One: [[3, 4, 1], [5, 5, 1], [2, 12, 1], [5, 11, 1]],
-                                                                                        BlockKind.Three: [[6, 6, 1]]},
-                                                          ChallengeKind.EndPosition: {BlockKind.One: [[4, 6, 1], [4, 7, 1], [4, 9, 1], [4, 10, 1]],
-                                                                                      BlockKind.Three: [[4, 8, 2]]}
-                                                          },
-                                                          ChallengeKind.BridgeOne: {ChallengeKind.StartPosition: {BlockKind.One: [[4, 3, 1], [7, 6, 1], [2, 12, 1], [5, 11, 1]],
-                                                                        BlockKind.Three: [[6, 6, 1],[3,1,1]]},
-                                                          ChallengeKind.EndPosition: {BlockKind.One: [[5, 6, 1], [5, 6, 2], [5, 8, 1], [5, 8, 2]],
-                                                                                      BlockKind.Three: [[5, 7, 3],[3,1,1]]}
-                                                          },
-                                                          ChallengeKind.BridgeTwo: {ChallengeKind.StartPosition: {BlockKind.One: [[5, 6, 1], [5, 8, 1], [5, 6, 2], [5, 8, 2]],
-                                                                        BlockKind.Three: [[5, 7, 3],[3,1,1],[6,6,1]]},
-                                                          ChallengeKind.EndPosition: {BlockKind.One: [[5, 6, 1], [5, 8, 1], [5, 5, 1], [5, 3, 1]],
-                                                                                      BlockKind.Three: [[5, 7, 2],[5,4,2]]}
-                                                          }
-                                                          }'''
+
         self.__challenge = challenge
         # check if challenge is not challenge kind
         
@@ -305,22 +410,7 @@ class UserChallenge:
             raise RobotError(ErrorCode.E0012, message)            
                  
         
-        
-        
-        # OLD - please remove after the new one is working 
-        #All challenges which are already implemented 
-        '''
-        impl_challenges = [ ChallengeKind.Beginner.value,ChallengeKind.BridgeOne.value,ChallengeKind.BridgeTwo.value] 
-        if challenge in impl_challenges:
-            for item in ChallengeKind:
-                if item.value == challenge:
-                    self.__challenge = self.__all_challenges[item] 
-                    print('Challenge %s ist gestartet. Viel Erfolg beim Lösen.' %{challenge})
-                    break
-        else:
-            message = "Die Aufgabe  %s ist noch nicht implementiert.  Bitte wählen Sie eine andere aus."%{challenge}
-            raise RobotError(ErrorCode.E0012, message)
-        '''
+     
            
 
         self.__coordinates = start_coordinates
@@ -360,8 +450,8 @@ class UserChallenge:
             
             # Load block types : Not used
             block_types = parser['challenge']['block_types']
-            block_types= block_types.replace('[','')
-            block_types= block_types.replace(']','')
+            block_types = block_types.replace('[','')
+            block_types = block_types.replace(']','')
             block_types = block_types.split(",")
             block_types = [i.lower() for i in block_types]
             
@@ -371,6 +461,7 @@ class UserChallenge:
                 dim = dim.replace('[','')
                 dim = dim.replace(']','')
                 dim = dim.split(',')
+                dim = [int(i) for i in dim]
                 block_type = block_type.lower()
                 if block_type in block_types:
                     challenge.add_block_type(BlockType(block_type,dim))
@@ -390,8 +481,10 @@ class UserChallenge:
                 start_pos = start_pos.split(",")
                 # ToDo: Check i
 
-                if challenge.valid_block_type(start_pos[3]):
-                    challenge.add_start_position(Block(start_pos[:3],start_pos[3].lower()))
+                if challenge.valid_block_type(start_pos[3]): 
+                    dim = challenge.get_dim(start_pos[3])
+                    #print('dim:' ,dim)
+                    challenge.add_start_position(Block([int(i) for i in start_pos[:3]],start_pos[3].lower(),dim))
                     #Debug.msg("Added start positions: {} type: {}".format(start_pos[:3],start_pos[3].lower()))
                 else:
                     Debug.error("invalid key of start block: {}".format(start_pos[3] ))
@@ -405,7 +498,9 @@ class UserChallenge:
                 final_pos = final_pos.replace(']','')
                 final_pos = final_pos.split(",")
                 if challenge.valid_block_type(final_pos[3]):
-                    challenge.add_final_position(Block(final_pos[:3],final_pos[3].lower()))
+                    dim = challenge.get_dim(final_pos[3])
+                    #print('dim:' ,dim)
+                    challenge.add_final_position(Block([int(i) for i in final_pos[:3]],final_pos[3].lower(),dim))
                     #Debug.msg("Added final positions: {} type: {}".format(final_pos[:3],final_pos[3].lower()))
                 else:
                     Debug.error("invalid key of final block: {}".format(final_pos[3] ))
@@ -440,90 +535,14 @@ class UserChallenge:
             self.__coordinates[2] = args[0]
         # Check blocks before putting the pump on
         elif function == robot.pump_on:
-            self.__challenge.
-            if self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.One].remove(self.__coordinates)
-                self.__block = BlockKind.One
-            elif self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].remove(self.__coordinates)
-                self.__block = BlockKind.Three
-            else:
-                message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
-                raise RobotError(ErrorCode.E0013, message)
-        
-        # Robot Pump OFF
-        
-        # Robot Pump ON
-        
-        ''' OLD CODE
-        # check type of function and change members accordingly
-        if function == robot.position_new:
-            self.__coordinates[0] = args[0]
-            self.__coordinates[1] = args[1]
-        elif function == robot.height_new:
-            self.__coordinates[2] = args[0]
-        elif function == robot.pump_on:
-            # we can change the coordinates in start challenge here, since it is reinitialized every time a script is
-            # run
-            
-            
-       
-            
-            
-            
-            
-            
-            
-           
-            if self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.One].remove(self.__coordinates)
-                self.__block = BlockKind.One
-            elif self.__coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
-                self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].remove(self.__coordinates)
-                self.__block = BlockKind.Three
-            else:
-                message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
-                raise RobotError(ErrorCode.E0013, message)
+          self.__challenge.pump_on(self.__coordinates)
         elif function == robot.pump_off:
-            # Calculate coordinates below gripper
             coordinates = self.__coordinates.copy()
-            Debug.msg('Der Block wird auf der Koordinate {} abgelegt'.format(coordinates[:]))
             # Block coordinate below placed block
-            coordinates[2] -= 1
-  
-            # check if a block is held, and there is either ground or another block below
-            valid_pos = False
-            if coordinates[2] == 0:
-               Debug.msg("Block wurde auf den Boden gelegt")
-               valid_pos = True
-            elif coordinates in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:
-               Debug.msg("Block wurde auf einen kleinen Block gelegt")
-               valid_pos = True
-            else:
-                for i in range(-1,2,1):
-                    # Note: Only one rotation is implemented yet as Three type block has the same rotation in all challenges
-                    if [coordinates[0],coordinates[1]+i,coordinates[2]] in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
-                            Debug.msg("Block wurde auf einen grossen Block gelegt")
-                            valid_pos = True
-            if valid_pos:
-                if self.__block is BlockKind.One:
-                    self.__challenge[ChallengeKind.StartPosition][BlockKind.One].append(self.__coordinates.copy())
-                elif self.__block is BlockKind.Three:
-                    self.__challenge[ChallengeKind.StartPosition][BlockKind.Three].append(self.__coordinates.copy())
-                else:
-                    message = "Der Robotor trägt momentan keinen oder keinen bekannten Block"
-                    raise RobotError(ErrorCode.E0014, message)
-                self.__block = BlockKind.Null
-                Debug.msg('Blocks auf Koordinaten: Klein ({}): {} \
-                      , Gross  ({}): {} '.format(len(self.__challenge[ChallengeKind.StartPosition][BlockKind.One]),self.__challenge[ChallengeKind.StartPosition][BlockKind.One][:],
-                      len(self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]),self.__challenge[ChallengeKind.StartPosition][BlockKind.Three][:]))
-            else:
-                message = "Der Block kann nicht in der Luft losgelassen werden."
-                Debug.error(message)
-                raise RobotError(ErrorCode.E0015, message)
-                    
-        else:
-            raise NotImplementedError()'''
+            #coordinates[2] -= 1
+            Debug.msg('Der Block wird auf der Koordinate {} abgelegt'.format(coordinates[:]))
+            self.__challenge.pump_off(coordinates)           
+
 
     def success(self):
         """
@@ -532,32 +551,9 @@ class UserChallenge:
         :return: True if end and current position of all blocks is equal
         :rtype: bool
         """
+        
+        return self.__challenge.success()
 
         # Only check whether the required end position are reached (new version : TE)
-        final_positions_one = self.__challenge[ChallengeKind.EndPosition][BlockKind.One]
-        final_positions_three = self.__challenge[ChallengeKind.EndPosition][BlockKind.Three]
-        for position in self.__challenge[ChallengeKind.StartPosition][BlockKind.One]:      
-             is_final = False
-             if position in final_positions_one:
-                 final_positions_one.remove(position)
-                 is_final = True
-             Debug.msg("Position {} is in endposition: {}"
-                       .format(position,is_final))
-        for position in self.__challenge[ChallengeKind.StartPosition][BlockKind.Three]:
-             is_final = False
-             if position in final_positions_three:
-                 final_positions_three.remove(position)
-                 is_final = True
-             Debug.msg("Position {} is in endposition: {}"
-                       .format(position,is_final))
-        Debug.msg("Fehlende kleine Blöcke: {}".format(len(final_positions_one)))
-        Debug.msg("Fehlende grosse Blöcke: {}".format(len(final_positions_three)))
-        
-        
-        
-
-
-        if (len(final_positions_one) == 0 and len(final_positions_three) == 0):  #First part before or is of old function and can be removed
-            return True
-        return False
+   
 
