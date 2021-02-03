@@ -12,6 +12,7 @@ class FunctionNames(Enum):
     hoehe = 2
     pumpe_an = 3
     pumpe_aus = 4
+    drehen = 5
 
 
 

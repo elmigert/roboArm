@@ -49,6 +49,8 @@ class UserScript:
                 self.pumpe_an(robot_handler,arguments)
             elif function_string == FunctionNames.pumpe_aus.name:
                 self.pumpe_aus(robot_handler,arguments)
+            elif function_string == FunctionNames.drehen.name:
+                self.drehen(robot_handler,arguments)
 
 
     @staticmethod
@@ -132,7 +134,25 @@ class UserScript:
         if len(arguments) != 1:
                     message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
                     raise RobotError(ErrorCode.E0008, message)
+        elif arguments[0] > 3:
+                    message = "Bitte geben sie maximal eien Höhe von 3 ein"
+                    raise RobotError(ErrorCode.E0008, message)
+        elif arguments[0] < 0:
+                    message = "Der Motor kann nicht unterhalb des Bodens gehen"
+                    raise RobotError(ErrorCode.E0008, message)
+            
         self.__function_calls.append( {"function": robot_handler.height_new, "args": arguments})
+        
+        
+    def drehen(self,robot_handler,arguments):
+        if len(arguments) != 1:
+                    message = "Bitte geben Sie nur einen 90 Grad Winkel für die Drehung an: drehen(90)"
+                    raise RobotError(ErrorCode.E0100, message)
+        elif arguments[0] != 90:
+            # Theoretisch sind auch nicht 90 grad drehungen möglich, aber es resultieren daraus keine ganzen Koordinaten. Daher wurde das Program vorerst auf 90 Grad Drehungen limitiert.
+            message = "Bitte geben Sie nur einen 90 Grad Winkel für die Drehung an: drehen(90)"
+            raise RobotError(ErrorCode.E0100, message)
+        self.__function_calls.append({"function": robot_handler.drehen, "args": arguments})
 
 
     def position(self,robot_handler,arguments):

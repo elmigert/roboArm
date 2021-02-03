@@ -110,9 +110,17 @@ class Challenge:
                 # ToDo: The pump should be stopped here or somewhere else
                 return False
         else:
-            message = "Der Robotor trägt momentan keinen oder keinen bekannten Block"
+            message = "Der Roboter trägt momentan keinen oder keinen bekannten Block"
             raise RobotError(ErrorCode.E0014, message)
-
+    def rotate_man_block(self,angle):
+        # rotates the block which is currently holdign by angle anticlockwise (degree)
+        if self.block_manipulating:
+            self.block_manipulating.rotate(angle)
+        else:
+            message = "Der Roboter trägt momentan keinen Block, welcher rotiert werden kann"
+            raise RobotError(ErrorCode.E0014, message)
+            return False
+        
         
         
     def isBlock(self,coordinates):
@@ -198,23 +206,37 @@ class Challenge:
     
     def debug_function(self):
         
-        print("Debug function for challenge ",self.name)
-        for i in self.blocks:
-            print("blocks",i.pos,i.type)
+        # Used to print out the loaded challenges or all the content of a challenge
+        
+        print("Loading challenge ",self.name)
+        print("Start blocks: (position, block type)")
+        n = 1
+        for i in self.start_pos:
+            print("{}: pos: {} type: {}, rot: {}".format(n ,i.pos,i.type,i.rotation))
+            n += 1
+        n = 1
+        print("Block goal: (position, block type)")
         for i in self.final_pos:
-            print("final pos",i.pos,i.type)
+            print("{}: pos: {} type: {}, rot: {}".format(n ,i.pos,i.type,i.rotation))
+            n += 1
+        print("Blocks current position: (position, block type)")
+        n = 1
+        for i in self.blocks:
+            print("{}: pos: {} type: {}, rot: {}".format(n ,i.pos,i.type,i.rotation))
+            n += 1
+        print("Dimension types:")
         for i in self.block_types:
-            print("types",i.type,"dim",i.dimension)
+            print("Block type: ",i.type,", Dimension: ",i.dimension)
     
     def success(self):
         # Checks, whether each of the final position is reached 
         # Note: The wrong rotation is not checked yet
+        #self.debug_function()
         blocks_total = len(self.final_pos)
         blocks_in_final = 0
-        self.debug_function()
         for block_goal in self.final_pos:           
             for block_current in self.blocks:
-                if block_current.is_same(block_goal.pos):
+                if block_current.is_same(block_goal.pos,block_goal.rotation):
                     blocks_in_final = blocks_in_final + 1
         print (' Block in final: {} of {}'.format(blocks_in_final,blocks_total))
         return blocks_in_final == blocks_total
@@ -253,7 +275,7 @@ class Block:
     def __init__(self,_coordinate,_type,_dimension=[1,1],_rotation=0):
         '''
         @Param
-            _coordinate: current center positino of the block (should also work for even blocks)
+            _coordinate: current center position of the block (should also work for even blocks)
             
             _coordinates: all occupied full positions
             _BlockKind: type of the block
@@ -280,8 +302,8 @@ class Block:
                     y = y_b - (self.dimension[1]-1)/2
                     r = math.sqrt(x**2 + y**2)
                     angle = math.atan2(y,x)
-                    angle = math.radians(self.rotation) + angle
-                    #Debug.msg('x {},y{},r{},angle{}'.format(x,y,r,angle))
+                    # Debug.msg('x {},y{},r{},angle{}, rotation {}'.format(x,y,r,angle,self.rotation))
+                    angle = math.radians(self.rotation) + angle 
                     self.coordinates.append([int(round(self.pos_center[0]+ r*math.cos(angle),1)),int(round(self.pos_center[1] + r*math.sin(angle),1)),int(self.pos_center[2])])
         else:
             self.coordinates =  [self.pos_center]       
@@ -297,6 +319,7 @@ class Block:
     
     def placeBlock(self,coordinate):
         # Updates the coordinates after the placement of the block
+        
         r = math.sqrt(self.hold_position[0]**2 + self.hold_position[1]**2)
         angle_dif = math.atan2(self.hold_position[1],self.hold_position[0])
         angle_change = self.rotation-self.hold_angle
@@ -308,10 +331,17 @@ class Block:
         
     
     def rotation(self,angle):
-        # Rotates the block by angle (degree) anticlockwise around the center (self.center)
-        
+        # Set the rotation of the block to angle (degree) anticlockwise around the center (self.center)
         self.rotation = angle
         self.update_coordinates()
+        
+        
+    def rotate(self,angle):
+        # Rotates the block by angle (degree) anticlockwise around the center (self.center)
+        rot = self.rotation + angle
+        while rot > 360 or rot < 0:
+            rot = rot - math.copysign(1,rot) * 360
+        self.rotation = rot
         
     @property
     def x(self):
@@ -386,19 +416,23 @@ class UserChallenge:
         """
         
 
-        #Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.
+
 
 
         self.__challenge = challenge
-        # check if challenge is not challenge kind
         
         
-        # NEW
+        #Turns the terminal debuging comments of
+        Debug.error_on = False
+        Debug.print_on = False
+        
+        
+        # Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.
         self.__all_challenges = []       
         self.load_challenges()
         challenge_loaded = False
         for chal in self.__all_challenges:
-            print('Challenge name: {} , chal searching {}'.format(chal.name, challenge))
+            #print('Challenge name: {} , chal searching {}'.format(chal.name, challenge))
             if chal.name == challenge:
                  self.__challenge = chal
                  print('Challenge %s ist gestartet. Viel Erfolg beim Lösen.' %{challenge})
@@ -412,7 +446,7 @@ class UserChallenge:
         
      
            
-
+        
         self.__coordinates = start_coordinates
         self.__block = BlockKind.Null
     @staticmethod  
@@ -480,11 +514,16 @@ class UserChallenge:
                 start_pos = start_pos.replace(']','')
                 start_pos = start_pos.split(",")
                 # ToDo: Check i
-
-                if challenge.valid_block_type(start_pos[3]): 
-                    dim = challenge.get_dim(start_pos[3])
+                if len(start_pos) == 4:
+                    angle = 0
+                elif len(start_pos) == 5:
+                    angle = int(start_pos[3])
+                else:
+                    print("Wrong start_position length. Example name = [x,y,z],rotation,type] or name = [x,y,z], type ")
+                if challenge.valid_block_type(start_pos[-1]): 
+                    dim = challenge.get_dim(start_pos[-1])
                     #print('dim:' ,dim)
-                    challenge.add_start_position(Block([int(i) for i in start_pos[:3]],start_pos[3].lower(),dim))
+                    challenge.add_start_position(Block([int(i) for i in start_pos[:3]],start_pos[-1].lower(),dim,_rotation=angle))
                     #Debug.msg("Added start positions: {} type: {}".format(start_pos[:3],start_pos[3].lower()))
                 else:
                     Debug.error("invalid key of start block: {}".format(start_pos[3] ))
@@ -497,10 +536,16 @@ class UserChallenge:
                 final_pos= final_pos.replace('[','')
                 final_pos = final_pos.replace(']','')
                 final_pos = final_pos.split(",")
-                if challenge.valid_block_type(final_pos[3]):
-                    dim = challenge.get_dim(final_pos[3])
+                if len(final_pos) == 4:
+                    angle = 0
+                elif len(final_pos) == 5:
+                    angle = int(final_pos[3])
+                else:
+                    print("Wrong start_position length. Example name = [x,y,z],rotation,type] or name = [x,y,z], type ")
+                if challenge.valid_block_type(final_pos[-1]):
+                    dim = challenge.get_dim(final_pos[-1])
                     #print('dim:' ,dim)
-                    challenge.add_final_position(Block([int(i) for i in final_pos[:3]],final_pos[3].lower(),dim))
+                    challenge.add_final_position(Block([int(i) for i in final_pos[:3]],final_pos[-1].lower(),dim,_rotation=angle))
                     #Debug.msg("Added final positions: {} type: {}".format(final_pos[:3],final_pos[3].lower()))
                 else:
                     Debug.error("invalid key of final block: {}".format(final_pos[3] ))
@@ -535,13 +580,14 @@ class UserChallenge:
             self.__coordinates[2] = args[0]
         # Check blocks before putting the pump on
         elif function == robot.pump_on:
-          self.__challenge.pump_on(self.__coordinates)
+            self.__challenge.pump_on(self.__coordinates)
         elif function == robot.pump_off:
             coordinates = self.__coordinates.copy()
-            # Block coordinate below placed block
-            #coordinates[2] -= 1
             Debug.msg('Der Block wird auf der Koordinate {} abgelegt'.format(coordinates[:]))
-            self.__challenge.pump_off(coordinates)           
+            self.__challenge.pump_off(coordinates)
+        elif function == robot.drehen:
+            Debug.msg('Der Block wird um {} Grad gedreht'.format(args[0]))
+            self.__challenge.rotate_man_block(args[0])
 
 
     def success(self):

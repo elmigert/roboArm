@@ -37,6 +37,12 @@ class MockRobotHandler:
         Mock height_new method.
         """
         print("height_new: ", z_user_list)
+        
+    def drehen(self, angle):
+        """
+        Mock height_new method.
+        """
+        print("Rotated by {} degrees ".format(angle[0]))
 
     def pump_on(self):
         """

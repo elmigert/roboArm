@@ -79,6 +79,7 @@ class RobotHandler:
         # move to fix starting position
         self.position_new([3, 8])
         self.height_new([2])
+        self.drehen([0])
         self.__swift.flush_cmd()
 
     def position_new(self, position_user):
@@ -145,6 +146,16 @@ class RobotHandler:
         self.__swift.set_pump(on=False)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
+        
+    def drehen(self, rotation):
+        wrist_angle_new = rotation + self.__wrist_angle
+        self.__wrist_angle = wrist_angle_new
+        wrist_angle_corrected = self.__wrist_servo_correction(wrist_angle_new)
+        self.__swift.set_wrist(angle=wrist_angle_corrected, wait=True)
+        self.__swift.flush_cmd()
+        self.__wrist_angle = wrist_angle_new
+        time.sleep(self.__sleep_time)
+        
 
     def __wrist_servo_correction(self, wrist_angle):
         """
