@@ -26,8 +26,10 @@ class RobotHandler:
 
         # TODO (ALR): Measure Servo offset again once uArm is installed.
         # set measured wrist servo scaling offset
+        # It's 90+-78
         self.__lower_servo_limit = 12.0
         self.__higher_servo_limit = 168.0
+        self.__angle_range_servo_limit = self.__higher_servo_limit-self.__lower_servo_limit
 
         # set sleep time to wait for servo to finish
         self.__sleep_time = 1.0
@@ -73,13 +75,13 @@ class RobotHandler:
         self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle)
         self.__wrist_angle = wrist_angle
 
+
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
 
         # move to fix starting position
         self.position_new([3, 8])
         self.height_new([2])
-        self.drehen([0])
         self.__swift.flush_cmd()
 
     def position_new(self, position_user):
@@ -89,21 +91,20 @@ class RobotHandler:
         :type position_user: list[int]
         """
         [x_user, y_user] = position_user
+        self.x_user = x_user
+        self.y_user = y_user
         # transform frames of positions
         uarm_dict = self.__geometry_helper.transform_position_user_to_uarm(x_user, y_user, self.__z_uarm)
         x_uarm_new = uarm_dict['x']
         y_uarm_new = uarm_dict['y']
 
         # calculate new wrist angle that keeps object in the same orientation
-        wrist_angle_new = self.__geometry_helper.calculate_equal_wrist_rotation(self.__x_uarm, x_uarm_new,
+        wrist_angle_new = self.__geometry_helper.calculate_equal_wrist_rotation_new(self.__x_uarm, x_uarm_new,
                                                                                 self.__y_uarm, y_uarm_new,
                                                                                 self.__wrist_angle)
-        # correct for shoehe(1)ervo scaling
-        wrist_angle_corrected = self.__wrist_servo_correction(wrist_angle_new)
-        # move arm
         #z_uarm_new = self.__geometry_helper.transform_height_user_to_uarm(self.__z_uarm, x_uarm_new, y_uarm_new)
         self.__swift.set_position(x=x_uarm_new, y=y_uarm_new)
-        self.__swift.set_wrist(angle=wrist_angle_corrected, wait=True)
+        self.__swift.set_wrist(angle=wrist_angle_new, wait=True)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
 
@@ -135,6 +136,12 @@ class RobotHandler:
         """
         Turn on the pump.
         """
+        angle =  self.__geometry_helper.adjust_wrist_rotation_before_pumpe_an(self.x_user,self.y_user)
+        self.__wrist_angle = angle
+        self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
+        self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
+        
         self.__swift.set_pump(on=True)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
@@ -146,15 +153,37 @@ class RobotHandler:
         self.__swift.set_pump(on=False)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
-        
+   
     def drehen(self, rotation):
-        wrist_angle_new = rotation + self.__wrist_angle
-        self.__wrist_angle = wrist_angle_new
-        wrist_angle_corrected = self.__wrist_servo_correction(wrist_angle_new)
-        self.__swift.set_wrist(angle=wrist_angle_corrected, wait=True)
+        rotation = rotation[0]
+        current_angle = self.__wrist_angle
+        angle = self.__geometry_helper.gripper_angle_rotation(current_angle,rotation)
+        self.__wrist_angle = angle
+        self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
         self.__swift.flush_cmd()
-        self.__wrist_angle = wrist_angle_new
         time.sleep(self.__sleep_time)
+ 
+        
+
+    
+    def test_c(self,*args):
+        # Function only for testing
+        if len(args) == 1:
+            rotation = (args[0])[0]
+        else:
+            rotation = 90
+        print("Checking servo limits")
+        
+        for rot in range (22,120,10):
+            print("angle {}".format(rot))
+            self.__wrist_angle = self.__wrist_servo_correction(rot)
+            self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
+            self.__swift.flush_cmd()
+            time.sleep(self.__sleep_time*2)
+                
+           
+        
+        
         
 
     def __wrist_servo_correction(self, wrist_angle):
@@ -172,3 +201,28 @@ class RobotHandler:
             wrist_angle_corrected = 90.0 + 90.0 * (wrist_angle - 90) / (self.__higher_servo_limit - 90.0)
 
         return wrist_angle_corrected
+    def __wrist_angle_limits(self,wrist_angle):
+        # If wrist angle is inside the limit, return the percentage of the low and upper limit. Otherwise, return false
+        
+        angle_limit_ratio = (wrist_angle - self.__lower_servo_limit)/(self.__angle_range_servo_limit)
+        
+        if angle_limit_ratio >=0 and angle_limit_ratio <= 1:
+            return angle_limit_ratio
+        else:
+            return False
+        
+    
+    def __wrist_servo_correction_new(self, wrist_angle):
+        """
+        Correct wrist servo offset / scaling.
+        :param wrist_angle: geometrically calculated wrist angle
+        :type wrist_angle: float
+        :return: corrected / scaled wrist angle according to servo offset
+        :rtype: float
+        """
+        # linearly scaling angle to real wrist limits
+        if wrist_angle < self.__lower_servo_limit:
+            pass
+        if wrist_angle > self.__higher_servo_limit:
+            pass
+        return wrist_angle

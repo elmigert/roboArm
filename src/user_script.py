@@ -51,6 +51,12 @@ class UserScript:
                 self.pumpe_aus(robot_handler,arguments)
             elif function_string == FunctionNames.drehen.name:
                 self.drehen(robot_handler,arguments)
+            elif function_string == FunctionNames.test_c.name:
+                self.test_c(robot_handler,arguments)
+                
+        # Schalte am Ende die Pumpe aus.
+        self.__function_calls.append({"function": robot_handler.pump_off, "args": []})
+        
 
 
     @staticmethod
@@ -135,7 +141,7 @@ class UserScript:
                     message = "Bitte geben Sie eine Koordinate für eine neue Hoehe an. Bsp.: hoehe(2)"
                     raise RobotError(ErrorCode.E0008, message)
         elif arguments[0] > 3:
-                    message = "Bitte geben sie maximal eien Höhe von 3 ein"
+                    message = "Die eingegebene Höhe ist {}. Bitte geben sie maximal eine Höhe von 3 ein".format(arguments[0])
                     raise RobotError(ErrorCode.E0008, message)
         elif arguments[0] < 0:
                     message = "Der Motor kann nicht unterhalb des Bodens gehen"
@@ -146,14 +152,17 @@ class UserScript:
         
     def drehen(self,robot_handler,arguments):
         if len(arguments) != 1:
-                    message = "Bitte geben Sie nur einen 90 Grad Winkel für die Drehung an: drehen(90)"
+                    message = "Bitte geben Sie nur einen Winkel für die Drehung an: Bsp:  drehen(90)"
                     raise RobotError(ErrorCode.E0100, message)
-        elif arguments[0] != 90:
+        """elif arguments[0] != 90:
             # Theoretisch sind auch nicht 90 grad drehungen möglich, aber es resultieren daraus keine ganzen Koordinaten. Daher wurde das Program vorerst auf 90 Grad Drehungen limitiert.
             message = "Bitte geben Sie nur einen 90 Grad Winkel für die Drehung an: drehen(90)"
-            raise RobotError(ErrorCode.E0100, message)
+            raise RobotError(ErrorCode.E0100, message)"""
         self.__function_calls.append({"function": robot_handler.drehen, "args": arguments})
 
+    def test_c(self,robot_handler,arguments):
+         
+        self.__function_calls.append({"function": robot_handler.test_c, "args": arguments})
 
     def position(self,robot_handler,arguments):
         if len(arguments) != 2:

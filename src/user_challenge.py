@@ -371,7 +371,7 @@ class Block:
         # Returns true, if a block occupies the position and false othe
         p_a= self.coordinates[0]
         p_b = self.coordinates[-1]
-        print('p_a {}, p_b {} position {}'.format(p_a,p_b,position))
+        #print('p_a {}, p_b {} position {}'.format(p_a,p_b,position))
         check = [False,False,False]
         for i in range(3):
             check[i] = (p_a[i] <= position[i] and position[i]  <= p_b[i]) or (p_a[i] >= position[i] and position[i]  >= p_b[i])
@@ -423,8 +423,8 @@ class UserChallenge:
         
         
         #Turns the terminal debuging comments of
-        Debug.error_on = False
-        Debug.print_on = False
+        Debug.error_on = True
+        Debug.print_on = True
         
         
         # Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.

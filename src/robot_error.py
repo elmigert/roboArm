@@ -55,4 +55,5 @@ class ErrorCode(Enum):
     #Error bei falscher Eingabe: User script
     E0100 = 100 # UserScript: Drehung falsch
 
+
     
