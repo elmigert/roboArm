@@ -593,13 +593,12 @@ class UserChallenge:
     def success(self):
         """
         Check if the challenge was successful by comparing the current and end positions of the blocks.
-        This function would be a lot nicer if objects were used for blocks/positions...
+        This function would be a lot nicer if objects were used for blocks/positions... DONE (TE)
         :return: True if end and current position of all blocks is equal
         :rtype: bool
         """
         
         return self.__challenge.success()
 
-        # Only check whether the required end position are reached (new version : TE)
    
 

@@ -30,6 +30,7 @@ class RobotHandler:
         self.__lower_servo_limit = 12.0
         self.__higher_servo_limit = 168.0
         self.__angle_range_servo_limit = self.__higher_servo_limit-self.__lower_servo_limit
+        self.__pick_up_height_correction = -9
 
         # set sleep time to wait for servo to finish
         self.__sleep_time = 1.0
@@ -136,13 +137,29 @@ class RobotHandler:
         """
         Turn on the pump.
         """
+        #Correct angle to allow a wide range of corrections
         angle =  self.__geometry_helper.adjust_wrist_rotation_before_pumpe_an(self.x_user,self.y_user)
         self.__wrist_angle = angle
         self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
         
+       
+
+        # move arm slightly down (those, the arm will not touch blocks and only grips them if the pump is on)
+        z_uarm_corrected = self.__z_uarm +self.__pick_up_height_correction
+        self.__swift.set_position(z=z_uarm_corrected)
+        self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
+        
+        # TUrns pump on
         self.__swift.set_pump(on=True)
+        self.__swift.flush_cmd()
+        time.sleep(self.__sleep_time)
+        
+        # move arm slightly up again to reach previous position
+        z_uarm_corrected = self.__z_uarm -self.__pick_up_height_correction
+        self.__swift.set_position(z=z_uarm_corrected)
         self.__swift.flush_cmd()
         time.sleep(self.__sleep_time)
 
@@ -168,19 +185,29 @@ class RobotHandler:
     
     def test_c(self,*args):
         # Function only for testing
+
         if len(args) == 1:
             rotation = (args[0])[0]
         else:
             rotation = 90
         print("Checking servo limits")
         
-        for rot in range (22,120,10):
-            print("angle {}".format(rot))
-            self.__wrist_angle = self.__wrist_servo_correction(rot)
-            self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
-            self.__swift.flush_cmd()
-            time.sleep(self.__sleep_time*2)
-                
+        # Servo Test
+        if len(args) == 1:
+            if (args[0])[0] == 0:
+                for rot in range (22,120,10):
+                    print("angle {}".format(rot))
+                    self.__wrist_angle = self.__wrist_servo_correction(rot)
+                    self.__swift.set_servo_angle(servo_id=3,angle = self.__wrist_angle)
+                    self.__swift.flush_cmd()
+                    time.sleep(self.__sleep_time*2)
+            elif (args[0])[0] == 1:
+            
+                for x in range( 5,7,1):
+                    for y in range(3,12,1):
+                        self.position_new([x,y])
+                    
+                    
            
         
         

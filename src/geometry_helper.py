@@ -14,7 +14,7 @@ class GeometryHelper:
     """
     This class offers some transformations and helper functions between the uArm frame and an simplified user frame.
     """
-    def __init__(self, edge_length=40, x_offset=0, y_offset=-320, z_offset=-9, xy_base_offset=174, z_base_offset=93.5,
+    def __init__(self, edge_length=40, x_offset=-4, y_offset=-320, z_offset=0, xy_base_offset=174, z_base_offset=93.5,
                  min_radius_xy=120, max_radius_xy=340, servo_three_limit = [12,168]):
         """
         Constructor, defines basic values of user frame.
@@ -98,9 +98,12 @@ class GeometryHelper:
         alpha_1_deg = numpy.degrees(alpha_1_rad)
         alpha_2_deg = numpy.degrees(alpha_2_rad)
         # calculate degree difference 
+        
         beta_1 =  alpha_2_deg -alpha_1_deg
+        
         # Calculates the best possible rotation
         final_rot = self.gripper_angle_rotation(wrist_old,beta_1)
+        Debug.msg('Previous angle: {}, current angle: {}, correction: {}, final angle servo 3 {}'.format(alpha_1_deg,alpha_2_deg,beta_1,final_rot))
         return final_rot
     
     def gripper_angle_rotation(self,current_angle,angle_rotation):
@@ -112,18 +115,14 @@ class GeometryHelper:
         """
         angle_rotation %= 180
         
-        rot = []
-        if angle_rotation > 90:
-           rot.append(angle_rotation)
-           rot.append( -(angle_rotation%90))
-        else:
-           rot.append(angle_rotation)
-           rot.append( -180 + angle_rotation)
+        rot = [angle_rotation,angle_rotation -180]
+
         
         # Possible rotation for the same result (given 180 grad rot. symmetry)
         result = []
         for i in rot:
             result.append(i + current_angle)
+            Debug.msg('Current angle: {}, change: {}, final angle {}'.format(current_angle,i,result[-1] ))
 
         
         # Checks, if a result is possible. Else, do the best possible solution
@@ -136,11 +135,11 @@ class GeometryHelper:
         loss = 360 # tries to minimize loss and uses a high value in the initialization
         for angle in result:
             for limit in self.__servo_three_limits:
-                tmp = angle - limit
+                tmp = numpy.absolute(angle - limit)
                 if tmp < loss:
                     final_angle = limit
                     loss = tmp
-        Debug.msg('Final loss in angle degrees: {}'.format(loss ))
+        Debug.msg('Final loss in angle degrees: {}'.format(loss))
         return final_angle
         
         
@@ -200,15 +199,15 @@ class GeometryHelper:
         # Note: angle on (0,0) point of board 180 Grad, angle on (0,15) => 0 Grad
         
         # The rotation needs to be reversed
-        if alpha_1_deg < self.__servo_three_limits[0]:
-            mot_angle = self.__servo_three_limits[1]
-        elif alpha_1_deg > self.__servo_three_limits[1]:
+        if alpha_1_deg < (self.__servo_three_limits[0]-90):
             mot_angle = self.__servo_three_limits[0]
+        elif alpha_1_deg > (self.__servo_three_limits[1]-90):
+            mot_angle = self.__servo_three_limits[1]
         else:
-            #Reverse the mot angle (since the correction of the block needs to be done in reverse direction)
-            mot_angle = self.__servo_three_limits[1] -(alpha_1_deg - self.__servo_three_limits[0])
+            
+            mot_angle = alpha_1_deg + 90  
         
-
+        Debug.msg('Angle adjusted before picking up the block: Block anlge: {}, gripper angle {}'.format(alpha_1_deg,mot_angle ))
         return mot_angle
 
     def transform_height_user_to_uarm(self, z_user, x_uarm, y_uarm):

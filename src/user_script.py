@@ -8,7 +8,7 @@ from src.user_functions import FunctionNames
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
 from src.user_challenge import UserChallenge, ChallengeKind
-
+from src.debug import Debug
 
 class UserScript:
     """
@@ -54,8 +54,7 @@ class UserScript:
             elif function_string == FunctionNames.test_c.name:
                 self.test_c(robot_handler,arguments)
                 
-        # Schalte am Ende die Pumpe aus.
-        self.__function_calls.append({"function": robot_handler.pump_off, "args": []})
+
         
 
 
@@ -97,11 +96,7 @@ class UserScript:
                     except:
                         message = "Das eingegebene Argument {} ist keine gültige Zahl".format(i)
                         raise RobotError(ErrorCode.E0006,message)
-                            
-          
-                    
-                
-               
+
         else:
             arguments = []
 
@@ -124,6 +119,8 @@ class UserScript:
                 function()
             # update user challenge
             self.__user_challenge.record_robot(robot_handler, function, argument)
+        Debug.msg("All commands executed. Reseting arm and checking challenge victory conditions")
+        robot_handler.reset()
         return self.__user_challenge.success()
 
     @staticmethod
