@@ -231,7 +231,8 @@ class Challenge:
     def success(self):
         # Checks, whether each of the final position is reached 
         # Note: The wrong rotation is not checked yet
-        #self.debug_function()
+        self.debug_function()
+        
         blocks_total = len(self.final_pos)
         blocks_in_final = 0
         for block_goal in self.final_pos:           
@@ -239,6 +240,7 @@ class Challenge:
                 if block_current.is_same(block_goal.pos,block_goal.rotation):
                     blocks_in_final = blocks_in_final + 1
         print (' Block in final: {} of {}'.format(blocks_in_final,blocks_total))
+        
         return blocks_in_final == blocks_total
 
             
@@ -339,9 +341,7 @@ class Block:
     def rotate(self,angle):
         # Rotates the block by angle (degree) anticlockwise around the center (self.center)
         rot = self.rotation + angle
-        while rot > 360 or rot < 0:
-            rot = rot - math.copysign(1,rot) * 360
-        self.rotation = rot
+        self.rotation = rot%180
         
     @property
     def x(self):
