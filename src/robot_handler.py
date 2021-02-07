@@ -6,8 +6,10 @@ This file contains the RobotHandler class, which handles the communication with 
 
 import time
 
-from uarm_python_sdk.uarm.wrapper import SwiftAPI
 
+
+
+from libraries.uArm_Python_SDK.uarm.wrapper import SwiftAPI
 from src.geometry_helper import GeometryHelper
 from src.robot_error import ErrorCode, RobotError
 from src.user_challenge import UserChallenge
