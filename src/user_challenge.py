@@ -19,20 +19,6 @@ from src.robot_error import ErrorCode, RobotError
 from src.debug import Debug
 
 
-class ChallengeKind(Enum):
-    """
-    OLD: WIll be removed
-    Enum class to distinguish the challenge kinds. Is used to save all position of blocks and manipulation of states. Probably be removed in later stage
-    """
-    
-    BridgeOne = "Brücke 1"
-    BridgeTwo = "Brücke 2"
-    Beginner = "Anfänger"
-    Advanced = 1
-    Pro = 3
-    StartPosition = 4
-    EndPosition = 5
-    
     
 
 class Challenge:
@@ -47,6 +33,11 @@ class Challenge:
         self.init = [False,False,False] # Initialized [start_pos,final_pos,block_types]
         self.name = _name
         self.block_manipulating = None
+        
+        # Type options : 'test', 'challenge', 'other'
+        self.success_on = True         # succes_on not turn on success mode
+        self.load_final_block = True
+        self.challenge = False
         
     def add_start_position(self,block):
         # Adds a block to the start position
@@ -68,6 +59,27 @@ class Challenge:
         # @_block_type: type: BlockType, holds dimension(x,y) and type (str)
         if not self.init[2]:
             self.block_types.append(_block_type)
+    
+    def add_options(self, options):
+        # Adds all options of the challenge file to the challenge
+        # @options: dict containing the options
+        key = 'type'
+        if key in options:
+            
+            if options['type'] == 'test':
+                self.success_on = False
+                self.load_final_block = False
+                Debug.msg('Test on')
+            elif options['type'] == 'challenge':
+                self.challenge = True
+            elif options['type'] == 'other':
+                pass
+        key = 'info_text'
+        if key in options:
+            self.info_text = options['info_text']
+            
+            
+        
 
     def valid_block_type(self,_block_type_str):
         # Returns true, if block_type_str exists
@@ -230,18 +242,24 @@ class Challenge:
     
     def success(self):
         # Checks, whether each of the final position is reached 
-        # Note: The wrong rotation is not checked yet
         self.debug_function()
+        if self.success_on:
+            blocks_total = len(self.final_pos)
+            blocks_in_final = 0
+            for block_goal in self.final_pos:           
+                for block_current in self.blocks:
+                    if block_current.is_same(block_goal.pos,block_goal.rotation):
+                        blocks_in_final = blocks_in_final + 1
+            print (' Block in final: {} of {}'.format(blocks_in_final,blocks_total))
+            if blocks_in_final == blocks_total:
+                return self.name
+            else:
+                return False
+        else:
+            return 'test'
+            
         
-        blocks_total = len(self.final_pos)
-        blocks_in_final = 0
-        for block_goal in self.final_pos:           
-            for block_current in self.blocks:
-                if block_current.is_same(block_goal.pos,block_goal.rotation):
-                    blocks_in_final = blocks_in_final + 1
-        print (' Block in final: {} of {}'.format(blocks_in_final,blocks_total))
-        
-        return blocks_in_final == blocks_total
+
 
             
                 
@@ -410,7 +428,7 @@ class UserChallenge:
         """
         Class initialization.
         :param challenge: Kind of challenge to be monitored.
-        :type challenge: ChallengeKind, str
+        :type challenge: Name of challenge, str
         :param start_coordinates: start position and height of robot in user frame [x, y, z]
         :type start_coordinates: list
         """
@@ -451,12 +469,16 @@ class UserChallenge:
         self.__block = BlockKind.Null
     @staticmethod  
     def challenge_name_path():
+        
+        ''' Returns the path and other basics of the challenge config file '''
         parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
         path = os.path.join(parent_path,"challenges/challenges_init")
         path_challenges = []
         file_ending = 'ini'
         parser = configparser.ConfigParser()
-        challenge_names = []
+        challenge_names = [] # names of the challenge
+        sample_text = [] # text in the challenge textbox
+        description = [] # Info in the challenge description
         for file in os.listdir(path):
             if file.endswith(file_ending):
                 path_challenge = os.path.join(path,file)
@@ -464,13 +486,28 @@ class UserChallenge:
                 parser.read(path_challenge)
                 if parser['CONFIG']['filetype'] == "challenge":
                     challenge_names.append(parser['challenge']['name'])
+                    if parser.has_option('challenge','sample_text'):
+                        sample_text.append(parser['challenge']['sample_text'])
+                    else:
+                        sample_text.append('')
+                    if parser.has_option('challenge','description'):
+                        description.append(parser['challenge']['description'])
+                    else:
+                        description.append('')
+                        
+                    
+                        
                 else:
                     Debug.error(path_challenge, ' is no valid challenge file. The file is not loaded. Please add challenge to the name in the challenge section.')
+        challenge_infos = {'names':challenge_names,'sample_text' : sample_text, 'description' : description}
         
-        return [challenge_names,path_challenges]
+        return [challenge_infos,path_challenges]
  
         
     def load_challenges(self):
+        ''' 
+        Loads all challenges in the challenge/challenges_init folder with an .ini ending.
+        '''
 
         _,challenge_paths = self.challenge_name_path()
         
@@ -482,12 +519,25 @@ class UserChallenge:
             challenge = Challenge(parser['challenge']['name'])
 
             
-            # Load block types : Not used
+            # Load block types
             block_types = parser['challenge']['block_types']
             block_types = block_types.replace('[','')
             block_types = block_types.replace(']','')
             block_types = block_types.split(",")
             block_types = [i.lower() for i in block_types]
+            
+            #Load generall options
+            options = {}
+            keys = ['type','info_text']
+            for key in keys:
+                if parser.has_option('challenge',key):
+                    option = parser['challenge'][key]
+                else:
+                    option = ''
+                options[key] = option
+            challenge.add_options(options)
+               
+            
             
             # Load block dimensions
             for block_type in parser['Block_Dimensions']:

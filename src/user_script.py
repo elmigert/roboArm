@@ -7,7 +7,7 @@ from src.user_functions import FunctionNames
 
 from src.robot_error import ErrorCode, RobotError
 from src.robot_handler import RobotHandler
-from src.user_challenge import UserChallenge, ChallengeKind
+from src.user_challenge import UserChallenge
 from src.debug import Debug
 
 class UserScript:

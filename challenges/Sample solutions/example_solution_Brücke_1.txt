@@ -8,7 +8,7 @@ hoehe(1)
 pumpe_aus()
 
 hoehe(2)
-position(5, 4)
+position(6, 4)
 hoehe(1)
 pumpe_an()
 hoehe(3)
