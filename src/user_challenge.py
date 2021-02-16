@@ -242,7 +242,7 @@ class Challenge:
     
     def success(self):
         # Checks, whether each of the final position is reached 
-        self.debug_function()
+        # self.debug_function()
         if self.success_on:
             blocks_total = len(self.final_pos)
             blocks_in_final = 0
@@ -424,7 +424,7 @@ class UserChallenge:
     """
     This class monitors user challenge success.g
     """
-    def __init__(self, challenge, start_coordinates):
+    def __init__(self, challenge):
         """
         Class initialization.
         :param challenge: Kind of challenge to be monitored.
@@ -442,12 +442,13 @@ class UserChallenge:
         
         #Turns the terminal debuging comments of
         Debug.error_on = True
-        Debug.print_on = True
+        Debug.print_on = False
         
         
         # Loads all challenges out of the challenges/challenge_init folder. Feel free to define new ones.
         self.__all_challenges = []       
         self.load_challenges()
+        self.load_general_options()
         challenge_loaded = False
         for chal in self.__all_challenges:
             #print('Challenge name: {} , chal searching {}'.format(chal.name, challenge))
@@ -465,7 +466,6 @@ class UserChallenge:
      
            
         
-        self.__coordinates = start_coordinates
         self.__block = BlockKind.Null
     @staticmethod  
     def challenge_name_path():
@@ -475,7 +475,6 @@ class UserChallenge:
         path = os.path.join(parent_path,"challenges/challenges_init")
         path_challenges = []
         file_ending = 'ini'
-        parser = configparser.ConfigParser()
         challenge_names = [] # names of the challenge
         sample_text = [] # text in the challenge textbox
         description = [] # Info in the challenge description
@@ -483,25 +482,48 @@ class UserChallenge:
             if file.endswith(file_ending):
                 path_challenge = os.path.join(path,file)
                 path_challenges.append(path_challenge)
+                parser = configparser.ConfigParser()
                 parser.read(path_challenge)
                 if parser['CONFIG']['filetype'] == "challenge":
                     challenge_names.append(parser['challenge']['name'])
                     if parser.has_option('challenge','sample_text'):
-                        sample_text.append(parser['challenge']['sample_text'])
+                        text = parser['challenge']['sample_text']
+                        text = text.split('\\n')
+                        new_text = ''
+                        for line in text:
+                            new_text = new_text + line + '\n'
+                        sample_text.append(new_text)
                     else:
                         sample_text.append('')
                     if parser.has_option('challenge','description'):
-                        description.append(parser['challenge']['description'])
+                        text = parser['challenge']['description']
+                        text = text.split('\\n')
+                        new_text = ''
+                        for line in text:
+                            new_text = new_text + line + '\n'
+                        description.append(new_text)
                     else:
                         description.append('')
                         
                     
                         
                 else:
-                    Debug.error(path_challenge, ' is no valid challenge file. The file is not loaded. Please add challenge to the name in the challenge section.')
+                    Debug.error(path_challenge, 'is no valid challenge file. The file is not loaded. Please add challenge to the name in the challenge section.')
         challenge_infos = {'names':challenge_names,'sample_text' : sample_text, 'description' : description}
+
         
         return [challenge_infos,path_challenges]
+    
+    def load_general_options(self):
+        parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
+        path = os.path.join(parent_path,"config/config.ini")
+        parser = configparser.ConfigParser()
+        parser.read(path)
+        pos = parser['ROBOT']['reset_position']
+        pos= pos.replace('[','')
+        pos = pos.replace(']','')
+        pos = pos.split(",")
+        self.__coordinates = pos
  
         
     def load_challenges(self):
@@ -510,6 +532,8 @@ class UserChallenge:
         '''
 
         _,challenge_paths = self.challenge_name_path()
+        
+
         
         for path in challenge_paths:
             parser = configparser.ConfigParser()

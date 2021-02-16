@@ -114,7 +114,20 @@ class MagicCubeWindow(QWidget):
             # ToDO: Implement cube sending
             self.write('Erfolg wird dem Magic Cube gesendet.')
         else:
-            self.write('Es ist/sind erst {} von {} Challenge(s) gelöst. Bitte löse zuerste die fehlende(n) Aufgabe(n)'.format(self._n_chal_completed,self._n_chal_required))
+            
+            if self._n_chal_completed == 1:
+                first_part = 'Es ist erst {} von {} Challenge(s) gelöst. '.format(self._n_chal_completed,self._n_chal_required)
+                
+            elif self._n_chal_completed == 0:
+                first_part = 'Es ist noch keine von {} Challenge(s) gelöst. '.format(self._n_chal_completed,self._n_chal_required)
+            else:
+                first_part = 'Es sind erst {} von {} Challenge(s) gelöst. '.format(self._n_chal_completed,self._n_chal_required)
+            if self._n_chal_required- self._n_chal_completed == 1:
+                second_part = 'Bitte löse noch die fehlende Aufgabe.'
+            else:
+                second_part = 'Bitte löse zuerst die fehlenden Aufgaben.'
+                
+            self.write(first_part + second_part)
         pass
     
     def add_challenges(self):

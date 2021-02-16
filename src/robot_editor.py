@@ -10,13 +10,25 @@ try:
     import configparser
 except:
     from six.moves import configparser
-
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel
+from PyQt5.QtCore import QThread
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTextEdit
 
 from src.robot_error import RobotError
 from src.user_script import UserScript
 from src.user_challenge import UserChallenge
 from src.window_success_cube import MagicCubeWindow
+
+class Thread(QThread):
+    
+    def __init__(self,robot_handler):
+        super(Thread, self).__init__()
+        self.robot_handler = robot_handler
+    def run(self):
+        UserScript.reset(self.robot_handler)  
+        QThread.sleep(0.1)
+
+
 
 class RobotEditor(QWidget):
     """
@@ -29,8 +41,9 @@ class RobotEditor(QWidget):
         :type robot_handler: RobotHandler
         """
         super(RobotEditor, self).__init__()
-
+        
         self.__robot_handler = robot_handler
+
 
         # first horizontal box
         self.__run_button = QPushButton('Start')
@@ -38,21 +51,35 @@ class RobotEditor(QWidget):
         self.__magic_cube_button = QPushButton('Magic Cube Kommunikation')
         self.__challenge_choice = QComboBox()
         
-        #adds challenge informations to self.challenge_infos (dict) and completes the text challenge info text, sample text and adds the challenges
+        # adds challenge informations to self.challenge_infos (dict) and completes the text challenge info text, sample text and adds the challenges
         self.add_challenges() 
+        
+        # Allows only one click on the reset button
+        self.__running_reset = Thread(self.__robot_handler)
+        self.__running_reset.finished.connect(lambda: self.__reset_button.setEnabled(True))
+        
         
 
 
         # second horizontal box
+        ## Headers
+        self.__label_text = QLabel('Befehlseingabefeld')
+        self.__label_challenge_description = QLabel('Aufgabenbeschreibung')    
+        ## Text Boxes
         self.__text = QPlainTextEdit(self)
         self.__text.resize(800, 800)
         
-        self.__challenge_description = QPlainTextEdit(self)
+        self.__challenge_description = QTextEdit(self)
         self.__challenge_description.resize(400, 800)
-        self.__challenge_description.setPlaceholderText('Challenge Informationen')
+        self.__challenge_description.setPlaceholderText('Hier stehen Information über die Aufgabe')
+        self.__challenge_description.setReadOnly(True)
+
+        
 
         # third horizontal box
         self.__output_console = QLabel()
+        
+
         
         
         # General challenge requirements and victory conditions: Will be updated in the loading process of the config.ini file (see self.__init_general_options())
@@ -61,6 +88,8 @@ class RobotEditor(QWidget):
 
 
         self.__init_ui()
+        
+
         
         
 
@@ -94,6 +123,9 @@ class RobotEditor(QWidget):
 
 
         # second  horizontal box, line numbering and text editor
+        h_box_2_label = QHBoxLayout()
+        h_box_2_label.addWidget(self.__label_text)
+        h_box_2_label.addWidget(self.__label_challenge_description)
         h_box_2 = QHBoxLayout()
         h_box_2.addWidget(self.__text)
         h_box_2.addWidget(self.__challenge_description)
@@ -121,6 +153,7 @@ class RobotEditor(QWidget):
         # fill vertical box
         v_box = QVBoxLayout()
         v_box.addLayout(h_box_1)
+        v_box.addLayout(h_box_2_label)
         v_box.addLayout(h_box_2)
         v_box.addLayout(h_box_3)
         v_box.addLayout(h_box_4)
@@ -138,8 +171,9 @@ class RobotEditor(QWidget):
         self.setWindowTitle('Robot Editor')
         
         
-        # Final updates of challenge texts
-        self.__text.setPlaceholderText('Hier können Befehle für den Roboterarm eingegeben werden. \n Beispiel: pumpe_an(), position(5,8) oder hoehe(2) \n Bei dem Dropdownmenu kann die Aufgabe ausgewählt werden. ')
+        # Final updates of challenge texts. TO: I could not make multiple lines to work.
+        self.__text.setPlaceholderText("Hier können Befehle für den Roboterarm eingegeben werden." 
+                                       "z.B. pumpe_an(), position(5,8) oder hoehe(2)")
         self.update_challenge_infos(self.__challenge_choice.currentText())
 
         self.show()
@@ -149,30 +183,41 @@ class RobotEditor(QWidget):
         Run script if possible, if not display error message.
         """
         input_string = self.__text.toPlainText()
+        
         success = False
-        try:
-            user_script = UserScript(input_string, self.__robot_handler, self.__challenge_choice.currentText())
-            success = user_script.run_script(self.__robot_handler)
+        if input_string =='':
+            self.__output_console.setText("Keine Befehle eingegeben. Bitte gebe Befehle in das Befehleingabefeld ein.")
+        else:
             self.__output_console.setText("Skript wird ausgeführt.")
-            if success == False:
-                self.__output_console.setText("Aufgabe noch nicht erfüllt, versuche es erneut.")
-            elif success == 'test':
-                self.__output_console.setText("Befehle ausgeführt. Testmodus.")
-            else:
-                # TODO (ALR): Add Magic Cube Wifi toggle here.
-                n = self.challenge_solved(success)
-                self.__output_console.setText("Aufgabe {} erfolgreich ausgeführt. Super! Gelöste Challenges: {} von {}".format(success,n,self.__required_challenges))
-                self.send_to_cube_window()
-        except RobotError as error:
-            self.__output_console.setText("FEHLER: " + error.message)
+            try:
+                user_script = UserScript(input_string, self.__robot_handler, self.__challenge_choice.currentText())
+                success = user_script.run_script(self.__robot_handler)
+                
+                if success == False:
+                    self.__output_console.setText("Aufgabe noch nicht erfüllt, versuche es erneut.")
+                elif success == 'test':
+                    self.__output_console.setText("Befehle ausgeführt. Testmodus.")
+                else:
+                    # TODO (ALR): Add Magic Cube Wifi toggle here.
+                    n = self.challenge_solved(success)
+                    self.__output_console.setText("Aufgabe {} erfolgreich ausgeführt. Super! Gelöste Challenges: {} von {}".format(success,n,self.__required_challenges))
+                    self.send_to_cube_window()
+            except RobotError as error:
+                self.__output_console.setText("FEHLER: " + error.message)
     
 
     def __reset(self):
         """
         Move robot back to starting position.
         """
-        UserScript.reset(self.__robot_handler)
-        self.__output_console.setText("Zurücksetzen des Roboters.")
+        if not self.__running_reset.isRunning():
+            self.__reset_button.setEnabled(False)
+            self.__running_reset.start()
+            self.__output_console.setText("Zurücksetzen des Roboters.")
+
+
+                  
+
 
     def __choice_event(self, text):
         """
@@ -180,13 +225,15 @@ class RobotEditor(QWidget):
         :param text: text of challenge_choice combox
         :type text: str
         """
-        print(self.__challenge_choice.currentText())
-        self.update_challenge_description(text)
+        text =self.__challenge_choice.currentText()
+        self.update_challenge_infos(text)
         self.__output_console.setText(text)
         
     def add_text_commands(self,text):
-        ''' Updates the sample text in the command box
-        @text: str, will be filled into the box'''
+        ''' 
+        Updates the sample text in the command box
+        @text: str, will be filled into the box
+        '''
         
         self.__text.setPlainText(text)
 
@@ -243,11 +290,12 @@ class RobotEditor(QWidget):
         ''' Updates the challenge description and sample text 
         @challenge_name: The name of the challenge, which is used to update the challenge name
         '''
+
         names = self.challenge_infos['names']
         if challenge_name in names:
             idx = names.index(challenge_name)
-        
         self.add_text_commands((self.challenge_infos['sample_text'])[idx])
+
         self.update_challenge_description((self.challenge_infos['description'])[idx])
         
         

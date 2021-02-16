@@ -1,5 +1,0 @@
-position(4,6)
-hoehe(1)
-pumpe_an()
-hoehe(2)
-drehen(90)

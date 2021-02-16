@@ -9,13 +9,20 @@ import numpy
 from src.robot_error import ErrorCode, RobotError
 from src.debug import Debug
 
+import json
+
+import os
+try:
+    import configparser
+except:
+    from six.moves import configparser
+
 
 class GeometryHelper:
     """
     This class offers some transformations and helper functions between the uArm frame and an simplified user frame.
     """
-    def __init__(self, edge_length=40, x_offset=-4, y_offset=-320, z_offset=0, xy_base_offset=174, z_base_offset=93.5,
-                 min_radius_xy=120, max_radius_xy=340, servo_three_limit = [12,168]):
+    def __init__(self):
         """
         Constructor, defines basic values of user frame.
         :param edge_length: side length of unit cube in mm
@@ -35,15 +42,25 @@ class GeometryHelper:
         :param max_radius_xy: maximum workspace radius
         :type max_radius_xy: float
         """
-        self.__edge_length = edge_length
-        self.__x_offset = x_offset
-        self.__y_offset = y_offset
-        self.__z_offset = z_offset
-        self.__xy_base_offset = xy_base_offset
-        self.__z_base_offset = z_base_offset
-        self.__min_radius_xy = min_radius_xy
-        self.__max_radius_xy = max_radius_xy
-        self.__servo_three_limits= servo_three_limit
+
+        self.load_general_options()
+    
+    def load_general_options(self):
+        parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
+        path = os.path.join(parent_path,"config/config.ini")
+        parser = configparser.ConfigParser()
+        parser.read(path)
+        
+        self.__edge_length = json.loads(parser['ROBOT']['edge_length'])
+        self.__x_offset = json.loads(parser['ROBOT']['x_offset'])
+        self.__y_offset = json.loads(parser['ROBOT']['y_offset'])
+        self.__z_offset = json.loads(parser['ROBOT']['z_offset'])
+        self.__xy_base_offset = json.loads(parser['ROBOT']['xy_base_offset'])
+        self.__z_base_offset = json.loads(parser['ROBOT']['z_base_offset'] )
+        self.__min_radius_xy = json.loads(parser['ROBOT']['min_radius_xy'])
+        self.__max_radius_xy = json.loads(parser['ROBOT']['max_radius_xy'])
+        self.__servo_three_limits= json.loads(parser['ROBOT']['servo_three_limit'])
+
 
     def transform_position_user_to_uarm(self, x_user, y_user, z_uarm):
         """
@@ -103,7 +120,6 @@ class GeometryHelper:
         
         # Calculates the best possible rotation
         final_rot = self.gripper_angle_rotation(wrist_old,beta_1)
-        Debug.msg('Previous angle: {}, current angle: {}, correction: {}, final angle servo 3 {}'.format(alpha_1_deg,alpha_2_deg,beta_1,final_rot))
         return final_rot
     
     def gripper_angle_rotation(self,current_angle,angle_rotation):
@@ -122,7 +138,7 @@ class GeometryHelper:
         result = []
         for i in rot:
             result.append(i + current_angle)
-            Debug.msg('Current angle: {}, change: {}, final angle {}'.format(current_angle,i,result[-1] ))
+
 
         
         # Checks, if a result is possible. Else, do the best possible solution
@@ -139,7 +155,6 @@ class GeometryHelper:
                 if tmp < loss:
                     final_angle = limit
                     loss = tmp
-        Debug.msg('Final loss in angle degrees: {}'.format(loss))
         return final_angle
         
         
@@ -207,7 +222,6 @@ class GeometryHelper:
             
             mot_angle = alpha_1_deg + 90  
         
-        Debug.msg('Angle adjusted before picking up the block: Block anlge: {}, gripper angle {}'.format(alpha_1_deg,mot_angle ))
         return mot_angle
 
     def transform_height_user_to_uarm(self, z_user, x_uarm, y_uarm):

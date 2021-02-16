@@ -24,8 +24,8 @@ class UserScript:
         :param challenge: challenge kind
         :type challenge: str
         """
-        # TODO (ALR): The coordinates should not be hardcoded here.
-        self.__user_challenge = UserChallenge(challenge, [3, 8, 2])
+        
+        self.__user_challenge = UserChallenge(challenge)
         # reset arm so values dont change
         robot_handler.reset()
         # remove all spaces
@@ -102,6 +102,7 @@ class UserScript:
 
         return {"function_string": function_string, "arguments": arguments}
 
+
     def run_script(self, robot_handler):
         """
         Run script functions on robot.
@@ -130,7 +131,9 @@ class UserScript:
         :param robot_handler: RobotHandler object, managing connection to uArm
         :type robot_handler: RobotHandler
         """
+
         robot_handler.reset()
+
         
 
     def hoehe(self,robot_handler, arguments):
