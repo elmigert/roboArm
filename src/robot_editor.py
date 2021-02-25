@@ -20,13 +20,17 @@ from src.user_challenge import UserChallenge
 from src.window_success_cube import MagicCubeWindow
 
 class Thread(QThread):
+    ''' Runs a thread for the reset button'''
     
     def __init__(self,robot_handler):
         super(Thread, self).__init__()
         self.robot_handler = robot_handler
     def run(self):
+        UserScript.stop = True
         UserScript.reset(self.robot_handler)  
+        UserScript.start_robot()
         QThread.sleep(0.1)
+
 
 
 
@@ -47,7 +51,8 @@ class RobotEditor(QWidget):
 
         # first horizontal box
         self.__run_button = QPushButton('Start')
-        self.__reset_button = QPushButton('Zurücksetzen')
+        self.__reset_button = QPushButton('Stop')
+        self.__reset_task_button = QPushButton('Aufgabe zurücksetzen')
         self.__magic_cube_button = QPushButton('Magic Cube Kommunikation')
         self.__challenge_choice = QComboBox()
         
@@ -57,6 +62,7 @@ class RobotEditor(QWidget):
         # Allows only one click on the reset button
         self.__running_reset = Thread(self.__robot_handler)
         self.__running_reset.finished.connect(lambda: self.__reset_button.setEnabled(True))
+        
         
         
 
@@ -78,10 +84,6 @@ class RobotEditor(QWidget):
 
         # third horizontal box
         self.__output_console = QLabel()
-        
-
-        
-        
         # General challenge requirements and victory conditions: Will be updated in the loading process of the config.ini file (see self.__init_general_options())
         self.__required_challenges = 2
         self.completed_challenges = []
@@ -98,7 +100,6 @@ class RobotEditor(QWidget):
     def __init_general_options(self):
         '''
         Read the general options out of the config file in the config folder. Add additional changeable parameter in the config file
-        
         '''
         parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
         path = os.path.join(parent_path,"config/config.ini")
@@ -115,6 +116,7 @@ class RobotEditor(QWidget):
         h_box_1 = QHBoxLayout()
         h_box_1.addWidget(self.__run_button)
         h_box_1.addWidget(self.__reset_button)
+        h_box_1.addWidget(self.__reset_task_button)
         h_box_1.addWidget(self.__challenge_choice)
         h_box_1.addStretch(1)
         
@@ -142,7 +144,8 @@ class RobotEditor(QWidget):
         
         # Adds tooltips
         self.__run_button.setToolTip('Führt den Befehl aus, der in der Textbox eingegeben wurde')
-        self.__reset_button.setToolTip('Löscht den Fortschritt der Challenge und setzt diese wieder in die Ausgangslage zurück')
+        self.__reset_button.setToolTip('Stopt den Motor und setzt diesen wieder in die Ausgangslage zurück.')
+        self.__reset_task_button.setToolTip('Löscht den Fortschritt der aktuellen Challenge.')
         self.__challenge_choice.setToolTip('Wählt eine Challenge aus')
         self.__magic_cube_button.setToolTip('Öffnet ein Fenster, um den aktuellen Fortschritt dem Magic Cube zu senden.')
         
@@ -163,6 +166,7 @@ class RobotEditor(QWidget):
         # button connections
         self.__run_button.clicked.connect(self.__run_script)
         self.__reset_button.clicked.connect(self.__reset)
+        self.__reset_task_button.clicked.connect(self.__reset_challenge)
         self.__challenge_choice.activated[str].connect(self.__choice_event)
         self.__magic_cube_button.clicked.connect(self.send_to_cube_window)
 
@@ -182,6 +186,7 @@ class RobotEditor(QWidget):
         """
         Run script if possible, if not display error message.
         """
+        self.__run_button.setEnabled(False)
         input_string = self.__text.toPlainText()
         
         success = False
@@ -189,9 +194,21 @@ class RobotEditor(QWidget):
             self.__output_console.setText("Keine Befehle eingegeben. Bitte gebe Befehle in das Befehleingabefeld ein.")
         else:
             self.__output_console.setText("Skript wird ausgeführt.")
+            challenge = self.__challenge_choice.currentText()
             try:
-                user_script = UserScript(input_string, self.__robot_handler, self.__challenge_choice.currentText())
-                success = user_script.run_script(self.__robot_handler)
+                if hasattr(self, 'user_script'):
+                    if self.user_script.current_challenge() == challenge:
+                        print('Continue challenge')
+                        self.user_script.load_commands(input_string, self.__robot_handler)
+                    else:
+                        print('Load new challenge')
+                        self.user_script = UserScript(input_string, self.__robot_handler, challenge)
+                        
+                else:
+                        print('Load new challenge')
+                        self.user_script = UserScript(input_string, self.__robot_handler, challenge)
+                        
+                success = self.user_script.run_script(self.__robot_handler)
                 
                 if success == False:
                     self.__output_console.setText("Aufgabe noch nicht erfüllt, versuche es erneut.")
@@ -204,17 +221,25 @@ class RobotEditor(QWidget):
                     self.send_to_cube_window()
             except RobotError as error:
                 self.__output_console.setText("FEHLER: " + error.message)
+                
+        self.__run_button.setEnabled(True)
     
 
     def __reset(self):
         """
         Move robot back to starting position.
         """
-        if not self.__running_reset.isRunning():
+
+        if not self.__running_reset.isRunning():          
             self.__reset_button.setEnabled(False)
             self.__running_reset.start()
             self.__output_console.setText("Zurücksetzen des Roboters.")
-
+            
+            
+    def __reset_challenge(self):
+        if hasattr(self, 'user_script'):
+            self.user_script.reset_challenge()
+            self.__output_console.setText("Löschen des Fortschrittes der Aufgabe")
 
                   
 

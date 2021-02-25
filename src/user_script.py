@@ -14,6 +14,8 @@ class UserScript:
     """
     The UserScript class handles input given by the frontend, checks it and converts it to robot_handler functions.
     """
+    # Static stop variable which tells if the commands should be stopped
+    stop = False
     def __init__(self, input_string, robot_handler, challenge):
         """
         Initialize UserScript object from frontend input-string.
@@ -24,8 +26,16 @@ class UserScript:
         :param challenge: challenge kind
         :type challenge: str
         """
-        
+
+        # Loads the user challenges
         self.__user_challenge = UserChallenge(challenge)
+        
+        # Loads the commands from the command window
+        self.load_commands(input_string,robot_handler)
+
+                
+    def load_commands(self,input_string,robot_handler):
+        ''' Loads the commands of the command lines in the terminal given by the input_string '''
         # reset arm so values dont change
         robot_handler.reset()
         # remove all spaces
@@ -53,8 +63,7 @@ class UserScript:
                 self.drehen(robot_handler,arguments)
             elif function_string == FunctionNames.test_c.name:
                 self.test_c(robot_handler,arguments)
-                
-
+        
         
 
 
@@ -120,6 +129,10 @@ class UserScript:
                 function()
             # update user challenge
             self.__user_challenge.record_robot(robot_handler, function, argument)
+            if self.stop:
+                break
+                print('Robot is stopped')
+        self.start_robot()
         Debug.msg("All commands executed. Reseting arm and checking challenge victory conditions")
         robot_handler.reset()
         return self.__user_challenge.success()
@@ -133,6 +146,28 @@ class UserScript:
         """
 
         robot_handler.reset()
+    @staticmethod
+    def stop_robot():
+        ''' Sets the robot into stop state, which will stop all commands'''
+        UserScript.stop = True
+    @staticmethod
+    def start_robot():
+        ''' resets the stop state. Thus, the commands are not stopped anymore '''
+        UserScript.stop = False
+        
+        
+    def reset_challenge(self):
+        
+        self.__user_challenge.reset_challenge()
+
+    def current_challenge(self):
+        ''' Returns the current loaded challenge
+        '''
+    
+        return self.__user_challenge.current_challenge()
+
+        
+
 
         
 
@@ -154,10 +189,7 @@ class UserScript:
         if len(arguments) != 1:
                     message = "Bitte geben Sie nur einen Winkel für die Drehung an: Bsp:  drehen(90)"
                     raise RobotError(ErrorCode.E0100, message)
-        """elif arguments[0] != 90:
-            # Theoretisch sind auch nicht 90 grad drehungen möglich, aber es resultieren daraus keine ganzen Koordinaten. Daher wurde das Program vorerst auf 90 Grad Drehungen limitiert.
-            message = "Bitte geben Sie nur einen 90 Grad Winkel für die Drehung an: drehen(90)"
-            raise RobotError(ErrorCode.E0100, message)"""
+
         self.__function_calls.append({"function": robot_handler.drehen, "args": arguments})
 
     def test_c(self,robot_handler,arguments):

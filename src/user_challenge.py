@@ -17,6 +17,7 @@ from enum import Enum
 
 from src.robot_error import ErrorCode, RobotError
 from src.debug import Debug
+import copy
 
 
     
@@ -43,7 +44,7 @@ class Challenge:
         # Adds a block to the start position
         # @block: type: Block
         if not self.init[0]:
-            self.blocks.append(block)   
+               
             self.start_pos.append(block)
             
 
@@ -99,7 +100,8 @@ class Challenge:
         # Checks, whether all required blocks are in the final position.
         pass
     def reset(self):
-        self.blocks = self.start_pos
+        self.blocks = copy.deepcopy(self.start_pos)
+        
     
     
     def pump_on(self,coordinates):
@@ -108,7 +110,7 @@ class Challenge:
             # Everything is fine
             return True
         else:
-            message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben."
+            message = "Die Pumpe kann nur aktiviert werden, um einen Block aufzuheben. Schau, ob die Blöcke richtig platziert sind"
             raise RobotError(ErrorCode.E0013, message)
             
     
@@ -197,10 +199,10 @@ class Challenge:
             test_block = self.block_manipulating # Used to test whether the block can be placed on two points
             test_block.placeBlock(bottom_coordinates)
             possible_coordinates = test_block.get_positions
-            print('Possible coordinates {}'.format(possible_coordinates))
+            #print('Possible coordinates {}'.format(possible_coordinates))
             blocks_below = 0
             for cord in possible_coordinates:
-                print('Coordinates to check : {}'.format(cord))
+                #print('Coordinates to check : {}'.format(cord))
                 if self.isBlock(cord):
                     blocks_below +=1
                     Debug.msg('There is a block below but not in the center')
@@ -258,16 +260,6 @@ class Challenge:
         else:
             return 'test'
             
-        
-
-
-            
-                
-
-        
-        
-        
-        
     
 
 class BlockKind(Enum): 
@@ -435,10 +427,6 @@ class UserChallenge:
         
 
 
-
-
-        self.__challenge = challenge
-        
         
         #Turns the terminal debuging comments of
         Debug.error_on = True
@@ -601,6 +589,7 @@ class UserChallenge:
                     #Debug.msg("Added start positions: {} type: {}".format(start_pos[:3],start_pos[3].lower()))
                 else:
                     Debug.error("invalid key of start block: {}".format(start_pos[3] ))
+            challenge.reset()
             challenge.init[0] = True
                 
                 
@@ -625,12 +614,18 @@ class UserChallenge:
                     Debug.error("invalid key of final block: {}".format(final_pos[3] ))
             challenge.init[1] = True
             
-            challenge.debug_function()
+            #challenge.debug_function() #Prints out the current blocks: only for debugging
             #Add the new challenge to the class
             self.__all_challenges.append(challenge)
                 
 
-        
+    def current_challenge(self):
+        ''' Returns the current challenge '''
+        return self.__challenge.name
+    
+    def reset_challenge(self):
+        self.__challenge.reset()
+  
 
     def record_robot(self, robot, function, args):
         """
