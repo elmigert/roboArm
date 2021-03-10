@@ -27,7 +27,7 @@ class Thread(QThread):
         self.robot_handler = robot_handler
     def run(self):
         UserScript.reset(self.robot_handler)  
-        QThread.sleep(0.1)
+        QThread.sleep(1)
 
 
 
