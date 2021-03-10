@@ -6,7 +6,6 @@ This file contains the RobotEditor class.
 
 
 import os
-import cv2 
 try:
     import configparser
 except:
