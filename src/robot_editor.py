@@ -26,9 +26,7 @@ class Thread(QThread):
         super(Thread, self).__init__()
         self.robot_handler = robot_handler
     def run(self):
-        UserScript.stop = True
         UserScript.reset(self.robot_handler)  
-        UserScript.start_robot()
         QThread.sleep(0.1)
 
 
@@ -165,7 +163,7 @@ class RobotEditor(QWidget):
 
         # button connections
         self.__run_button.clicked.connect(self.__run_script)
-        self.__reset_button.clicked.connect(self.__reset)
+        self.__reset_button.clicked.connect(self.__reset_button_clicked)
         self.__reset_task_button.clicked.connect(self.__reset_challenge)
         self.__challenge_choice.activated[str].connect(self.__choice_event)
         self.__magic_cube_button.clicked.connect(self.send_to_cube_window)
@@ -221,10 +219,16 @@ class RobotEditor(QWidget):
                     self.send_to_cube_window()
             except RobotError as error:
                 self.__output_console.setText("FEHLER: " + error.message)
+                self.__reset()
                 
         self.__run_button.setEnabled(True)
     
 
+    def __reset_button_clicked(self):
+        ''' The reset function when the reset button is clicked'''
+        
+        self.__output_console.setText("Zurücksetzen des Roboters.")
+        self.__reset()
     def __reset(self):
         """
         Move robot back to starting position.
@@ -233,7 +237,7 @@ class RobotEditor(QWidget):
         if not self.__running_reset.isRunning():          
             self.__reset_button.setEnabled(False)
             self.__running_reset.start()
-            self.__output_console.setText("Zurücksetzen des Roboters.")
+
             
             
     def __reset_challenge(self):

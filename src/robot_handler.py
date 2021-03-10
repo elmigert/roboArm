@@ -72,7 +72,8 @@ class RobotHandler:
         else:
             message = "Die Roboter Position konnte nicht gelesen werden, überprüfe die Verbindung."
             raise RobotError(ErrorCode.E0001, message)
-
+        
+        self.pump_off()
         # set servo value in degrees
         wrist_angle = 90.0
         self.__swift.set_servo_angle(servo_id=3, angle=wrist_angle)

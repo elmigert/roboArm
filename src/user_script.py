@@ -129,10 +129,7 @@ class UserScript:
                 function()
             # update user challenge
             self.__user_challenge.record_robot(robot_handler, function, argument)
-            if self.stop:
-                break
-                print('Robot is stopped')
-        self.start_robot()
+
         Debug.msg("All commands executed. Reseting arm and checking challenge victory conditions")
         robot_handler.reset()
         return self.__user_challenge.success()
@@ -146,15 +143,7 @@ class UserScript:
         """
 
         robot_handler.reset()
-    @staticmethod
-    def stop_robot():
-        ''' Sets the robot into stop state, which will stop all commands'''
-        UserScript.stop = True
-    @staticmethod
-    def start_robot():
-        ''' resets the stop state. Thus, the commands are not stopped anymore '''
-        UserScript.stop = False
-        
+
         
     def reset_challenge(self):
         
