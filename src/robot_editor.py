@@ -6,12 +6,13 @@ This file contains the RobotEditor class.
 
 
 import os
+import cv2 
 try:
     import configparser
 except:
     from six.moves import configparser
-from PyQt5.QtCore import QThread
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QThread, QSize
+from PyQt5.QtGui import QColor,QPixmap
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTextEdit
 
 from src.robot_error import RobotError
@@ -85,6 +86,17 @@ class RobotEditor(QWidget):
         # General challenge requirements and victory conditions: Will be updated in the loading process of the config.ini file (see self.__init_general_options())
         self.__required_challenges = 2
         self.completed_challenges = []
+        
+        # Last box
+        
+        # Adds a logo
+        logo_path = 'pictures/logo.png'
+        parent_path = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
+        path = os.path.join(parent_path,logo_path)
+        logo = QPixmap(path)
+        logo = logo.scaled(0.4*logo.size())
+        self.__logo = QLabel()
+        self.__logo.setPixmap(logo)
 
 
         self.__init_ui()
@@ -139,6 +151,12 @@ class RobotEditor(QWidget):
         h_box_4 = QHBoxLayout()
         h_box_4.addWidget(self.__magic_cube_button)
         
+        # Last Box, label and comment
+        h_box_final = QHBoxLayout()
+        # easy formating, was to lazy to google
+        h_box_final.addStretch(2)
+        h_box_final.addWidget(self.__logo)
+        
         
         # Adds tooltips
         self.__run_button.setToolTip('Führt den Befehl aus, der in der Textbox eingegeben wurde')
@@ -158,6 +176,7 @@ class RobotEditor(QWidget):
         v_box.addLayout(h_box_2)
         v_box.addLayout(h_box_3)
         v_box.addLayout(h_box_4)
+        v_box.addLayout(h_box_final)
         
 
 

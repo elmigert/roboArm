@@ -159,7 +159,6 @@ class Challenge:
         if coordinates[2] == 0:
             Debug.msg("There is only the floor there ")
             return False
-        print('Number of blocks: {}'.format(len(self.blocks)))
         for i in range(len(self.blocks)):
             
             if self.blocks[i].is_on_position(coordinates):
@@ -337,7 +336,7 @@ class Block:
         angle_change = self.rotation-self.hold_angle
         angle = angle_dif + angle_change
         self.pos_center = [round(coordinate[0] +r*math.cos(angle),1),round(coordinate[1] +r*math.sin(angle),1),coordinate[2] ]
-        print('Block placed at {}'.format(self.pos_center[:]))
+        #print('Block placed at {}'.format(self.pos_center[:]))
         self.update_coordinates()
         
         
