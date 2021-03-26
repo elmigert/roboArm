@@ -68,7 +68,7 @@ class RobotEditor(QWidget):
         # second horizontal box
         ## Headers
         self.__label_text = QLabel('Befehlseingabefeld')
-        self.__label_challenge_description = QLabel('Aufgabenbeschreibung')    
+        self.__label_challenge_description = QLabel('Zusatzinformationen')    
         ## Text Boxes
         self.__text = QPlainTextEdit(self)
         self.__text.resize(800, 800)
@@ -192,8 +192,7 @@ class RobotEditor(QWidget):
         
         
         # Final updates of challenge texts. TO: I could not make multiple lines to work.
-        self.__text.setPlaceholderText("Hier können Befehle für den Roboterarm eingegeben werden." 
-                                       "z.B. pumpe_an(), position(5,8) oder hoehe(2)")
+        self.__text.setPlaceholderText("Hier können Befehle für den Roboterarm eingegeben werden.")
         self.update_challenge_infos(self.__challenge_choice.currentText())
 
         self.show()
@@ -272,7 +271,7 @@ class RobotEditor(QWidget):
         :param text: text of challenge_choice combox
         :type text: str
         """
-        text =self.__challenge_choice.currentText()
+        text = self.__challenge_choice.currentText()
         self.update_challenge_infos(text)
         self.__output_console.setText(text)
         
@@ -286,7 +285,7 @@ class RobotEditor(QWidget):
 
     def update_challenge_description(self,text):
         
-        self.__challenge_description.setPlainText(text)
+        self.__challenge_description.setHtml(text)
 
     def write(self, text):
         """
@@ -327,7 +326,7 @@ class RobotEditor(QWidget):
         self.challenge_infos,_ = UserChallenge.challenge_name_path()
         names = self.challenge_infos['names']
         
-                
+       
         for name in names:
             self.__challenge_choice.addItems([name])
             

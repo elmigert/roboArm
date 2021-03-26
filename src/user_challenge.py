@@ -462,9 +462,13 @@ class UserChallenge:
         path = os.path.join(parent_path,"challenges/challenges_init")
         path_challenges = []
         file_ending = 'ini'
-        challenge_names = [] # names of the challenge
-        sample_text = [] # text in the challenge textbox
-        description = [] # Info in the challenge description
+        challenge_names_unsorted = [] # names of the challenge
+        challenge_names = []
+        sample_text_unsorted = [] # text in the challenge textbox
+        sample_text = []
+        description_unsorted = [] # Info in the challenge description
+        description = []
+        priorities = [] # Priority of the challenge in the dropdown menu: A low number means that the challenge is higher up.
         for file in os.listdir(path):
             if file.endswith(file_ending):
                 path_challenge = os.path.join(path,file)
@@ -472,31 +476,61 @@ class UserChallenge:
                 parser = configparser.ConfigParser()
                 parser.read(path_challenge)
                 if parser['CONFIG']['filetype'] == "challenge":
-                    challenge_names.append(parser['challenge']['name'])
+                    challenge_names_unsorted.append(parser['challenge']['name'])
                     if parser.has_option('challenge','sample_text'):
                         text = parser['challenge']['sample_text']
                         text = text.split('\\n')
                         new_text = ''
                         for line in text:
                             new_text = new_text + line + '\n'
-                        sample_text.append(new_text)
+                        sample_text_unsorted.append(new_text)
                     else:
-                        sample_text.append('')
+                        sample_text_unsorted.append('')
                     if parser.has_option('challenge','description'):
                         text = parser['challenge']['description']
                         text = text.split('\\n')
                         new_text = ''
                         for line in text:
                             new_text = new_text + line + '\n'
-                        description.append(new_text)
+                        description_unsorted.append(new_text)
                     else:
-                        description.append('')
-                        
+                        description_unsorted.append('')
+                    if parser.has_option('challenge','priority'):
+                        priorities.append(parser['challenge']['priority'])
+                    else:
+                        priorities.append(9999)
+                   
                     
                         
                 else:
                     Debug.error(path_challenge, 'is no valid challenge file. The file is not loaded. Please add challenge to the name in the challenge section.')
-        challenge_infos = {'names':challenge_names,'sample_text' : sample_text, 'description' : description}
+        
+        
+        #Sorting the lists   
+        index_of_list = list(range(len(priorities)))  # This will be used as a sorted index list
+        range_len = len(priorities)-1
+        while range_len > 0:
+            for idx in  range(range_len):
+                if priorities[idx] > priorities[idx+1]:
+                    tmp_priority = priorities[idx]
+                    tmp_idx= index_of_list[idx]
+                    priorities[idx] = priorities[idx+1]
+                    index_of_list[idx] = index_of_list[idx+1]
+                    priorities[idx+1] = tmp_priority
+                    index_of_list[idx+1] = tmp_idx
+            range_len -= 1
+                    
+        new_list_position = index_of_list # For clarity, we are now sorting the list according to the priorities
+        
+
+        for idx in new_list_position:
+            challenge_names.append(challenge_names_unsorted[idx])
+            description.append(description_unsorted[idx])
+            sample_text.append(sample_text_unsorted[idx])
+            
+            
+            
+        challenge_infos = {'names':challenge_names,'sample_text' : sample_text, 'description' : description, 'priorities' : priorities}
 
         
         return [challenge_infos,path_challenges]
